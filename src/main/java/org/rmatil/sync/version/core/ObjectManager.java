@@ -55,13 +55,20 @@ public class ObjectManager implements IObjectManager {
 
     public void writeObject(PathObject path)
             throws InputOutputException {
+        logger.trace("Writing path object for file " + path.getAbsolutePath());
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), path.getAbsolutePath());
         this.index.addPath(path.getAbsolutePath(), fileNameHash);
+
+        logger.trace("Calculated hash for file name: " + fileNameHash);
 
         String pathToObject = this.createObjectDirIfNotExists(fileNameHash);
 
         IPathElement indexPath = new PathElement(this.indexFileName);
         IPathElement objectPath = new PathElement(pathToObject + "/" + fileNameHash + ".json");
+
+        logger.trace("Writing path object to " + objectPath.getPath());
+        logger.trace("Writing index to "  + indexPath.getPath());
+
         this.storageAdapter.persist(StorageType.FILE, objectPath, path.toJson().getBytes());
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
