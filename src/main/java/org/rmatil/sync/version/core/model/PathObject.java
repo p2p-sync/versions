@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.rmatil.sync.version.api.PathType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PathObject {
@@ -27,8 +28,16 @@ public class PathObject {
         this.path = path;
         this.pathType = pathType;
         this.isShared = isShared;
+
         this.sharers = sharers;
+        if (null == this.sharers) {
+            this.sharers = new ArrayList<Sharer>();
+        }
+
         this.versions = versions;
+        if (null == this.versions) {
+            this.versions = new ArrayList<Version>();
+        }
     }
 
     public String getName() {
