@@ -44,4 +44,11 @@ public interface IVersionManager {
     void removeVersion(Version version, String pathToFile)
             throws InputOutputException;
 
+    /**
+     * Returns the object manager which manages the versions
+     *
+     * @return The object manager
+     */
+    IObjectManager getObjectManager();
+
 }

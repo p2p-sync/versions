@@ -51,4 +51,8 @@ public class VersionManager implements IVersionManager {
         pathObject.getVersions().remove(version);
         this.objectManager.writeObject(pathObject);
     }
+
+    public IObjectManager getObjectManager() {
+        return this.objectManager;
+    }
 }
