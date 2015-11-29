@@ -49,7 +49,11 @@ public class PathObject {
     }
 
     public String getAbsolutePath() {
-        return this.getPath() + "/" + this.getName();
+        if (! this.getPath().isEmpty()) {
+            return this.getPath() + "/" + this.getName();
+        }
+
+        return this.getName();
     }
 
     public PathType getPathType() {
