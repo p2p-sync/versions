@@ -8,6 +8,25 @@
     <artifactId>sync-version</artifactId>
     <version>0.1-SNAPSHOT</version>
 
+    <repositories>
+        <repository>
+            <id>commons-mvn-repo</id>
+            <url>https://raw.github.com/p2p-sync/commons/mvn-repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>persistence-mvn-repo</id>
+            <url>https://raw.github.com/p2p-sync/persistence/mvn-repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <property name="java.target" value="1.8" />
         <property name="java.source" value="1.8" />
