@@ -95,4 +95,9 @@ public class VersionManagerTest {
         List<Version> versions2 = versionManager.getVersions(pathObject.getAbsolutePath());
         assertTrue("versions are not empty after removing", versions2.isEmpty());
     }
+
+    @Test
+    public void testAccessor() {
+        assertEquals("ObjectManager is not the same", objectManager, versionManager.getObjectManager());
+    }
 }
