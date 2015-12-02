@@ -89,11 +89,14 @@ public class ObjectManager implements IObjectManager {
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
 
+        PathObject pathObject = this.getObject(fileNameHash);
         IPathElement objectPath = new PathElement(pathToHash);
 
         if (this.storageAdapter.exists(StorageType.FILE, objectPath)) {
             this.storageAdapter.delete(objectPath);
         }
+
+        this.index.removePath(pathObject.getAbsolutePath());
     }
 
     public Index getIndex() {
