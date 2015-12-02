@@ -62,14 +62,14 @@ public class ObjectManagerTest {
         Sharer sharer1 = new Sharer("192.168.1.1", AccessType.READ);
         Sharer sharer2 = new Sharer("192.168.3.2", AccessType.WRITE);
 
-        List<Sharer> sharers = new ArrayList<Sharer>();
+        List<Sharer> sharers = new ArrayList<>();
         sharers.add(sharer1);
         sharers.add(sharer2);
 
         Version v1 = new Version("hashOfContent");
         Version v2 = new Version("hashOfContentAfterModifying");
 
-        List<Version> versions = new ArrayList<Version>();
+        List<Version> versions = new ArrayList<>();
         versions.add(v1);
         versions.add(v2);
 

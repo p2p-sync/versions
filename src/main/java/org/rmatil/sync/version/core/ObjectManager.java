@@ -48,7 +48,7 @@ public class ObjectManager implements IObjectManager {
             logger.error(e.getMessage());
             logger.info("Creating the index file at " + this.indexFileName);
 
-            this.index = new Index(new HashMap<String, String>());
+            this.index = new Index(new HashMap<>());
             this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
         }
     }
