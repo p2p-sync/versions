@@ -89,14 +89,21 @@ public class ObjectManager implements IObjectManager {
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
 
-        PathObject pathObject = this.getObject(fileNameHash);
+        PathObject pathObjectToDelete = this.getObject(fileNameHash);
+        logger.trace("Removing path object for file " + pathObjectToDelete.getAbsolutePath());
         IPathElement objectPath = new PathElement(pathToHash);
+        IPathElement indexPath = new PathElement(this.indexFileName);
 
+        // remove object file, i.e. the file containing versions, ...
         if (this.storageAdapter.exists(StorageType.FILE, objectPath)) {
+            logger.trace("Removing old path object " + objectPath.getPath());
             this.storageAdapter.delete(objectPath);
         }
 
-        this.index.removePath(pathObject.getAbsolutePath());
+        logger.trace("Removing file from index...");
+        this.index.removePath(pathObjectToDelete.getAbsolutePath());
+        this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
+        logger.trace("Rewriting index after removing of file " + pathObjectToDelete.getAbsolutePath());
     }
 
     public Index getIndex() {
