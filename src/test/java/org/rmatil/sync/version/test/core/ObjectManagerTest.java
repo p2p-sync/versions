@@ -173,4 +173,19 @@ public class ObjectManagerTest {
         objectManager.getObject(fileNameHash);
     }
 
+    @Test
+    public void testGetChildren()
+            throws InputOutputException {
+        objectManager.writeObject(pathObject);
+
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, new ArrayList<>(), new ArrayList<>());
+        objectManager.writeObject(dirObject);
+
+        List<PathObject> children = objectManager.getChildren("somePath/to/dir");
+
+        assertFalse("Children contain a path", children.isEmpty());
+        assertEquals("Children contain only one path", 1, children.size());
+        assertEquals("PathObject is not equal", pathObject.toJson(), children.get(0).toJson());
+    }
+
 }

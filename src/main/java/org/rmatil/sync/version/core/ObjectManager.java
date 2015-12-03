@@ -14,7 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ObjectManager implements IObjectManager {
 
@@ -104,6 +107,21 @@ public class ObjectManager implements IObjectManager {
         this.index.removePath(pathObjectToDelete.getAbsolutePath());
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
         logger.trace("Rewriting index after removing of file " + pathObjectToDelete.getAbsolutePath());
+    }
+
+    public List<PathObject> getChildren(String relativeParentFileName)
+            throws InputOutputException {
+        List<PathObject> children = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : this.index.getPaths().entrySet()) {
+            // the parent is logically a directory, so to avoid getting the parent directory too,
+            // we can add a slash on the path to the parent dir
+            if (entry.getKey().startsWith(relativeParentFileName + "/")) {
+                children.add(this.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), entry.getKey())));
+            }
+        }
+
+        return children;
     }
 
     public Index getIndex() {
