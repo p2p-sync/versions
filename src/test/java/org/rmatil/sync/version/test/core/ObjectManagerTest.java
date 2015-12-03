@@ -186,6 +186,9 @@ public class ObjectManagerTest {
         assertFalse("Children contain a path", children.isEmpty());
         assertEquals("Children contain only one path", 1, children.size());
         assertEquals("PathObject is not equal", pathObject.toJson(), children.get(0).toJson());
+
+        objectManager.removeObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), dirObject.getAbsolutePath()));
+        objectManager.removeObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathObject.getAbsolutePath()));
     }
 
 }
