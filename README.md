@@ -29,7 +29,7 @@ Use Maven to add this component as your dependency:
 ```
 
 # Architectural Overview
-[![Architectural Overview](https://cdn.rawgit.com/p2p-sync/versions/master/src/main/resources/img/architectural-overview.svg)](https://cdn.rawgit.com/p2p-sync/versions/master/src/main/resources/img/architectural-overview.svg)
+[![Architectural Overview](https://cdn.rawgit.com/p2p-sync/versions/2d2192873c84878e28be3785f4433421452d6216/src/main/resources/img/architectural-overview.svg)](https://cdn.rawgit.com/p2p-sync/versions/2d2192873c84878e28be3785f4433421452d6216/src/main/resources/img/architectural-overview.svg)
 
 This component is able to save hashes computed over the content of a file in a simple object store. Tracked content is stored in a configurable json index file (e.g. `index.json`). For each stored object, a further object is stored (the `PathObject`). To avoid building the same directory structure again for storing these `PathObjects`, a hash is computed for the path to the file resp. directory. This hash is then stored in the index file accordingly to the file name. 
 
