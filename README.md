@@ -29,7 +29,7 @@ Use Maven to add this component as your dependency:
 ```
 
 # Architectural Overview
-[![Architectural Overview](https://cdn.rawgit.com/p2p-sync/versions/master/src/main/resources/img/architectural-overview.svg)](https://cdn.rawgit.com/p2p-sync/versions/master/src/main/resources/img/architectural-overview.svg)
+[![Architectural Overview](https://cdn.rawgit.com/p2p-sync/versions/2d2192873c84878e28be3785f4433421452d6216/src/main/resources/img/architectural-overview.svg)](https://cdn.rawgit.com/p2p-sync/versions/2d2192873c84878e28be3785f4433421452d6216/src/main/resources/img/architectural-overview.svg)
 
 This component is able to save hashes computed over the content of a file in a simple object store. Tracked content is stored in a configurable json index file (e.g. `index.json`). For each stored object, a further object is stored (the `PathObject`). To avoid building the same directory structure again for storing these `PathObjects`, a hash is computed for the path to the file resp. directory. This hash is then stored in the index file accordingly to the file name. 
 
@@ -70,8 +70,49 @@ The object is stored in a directory named equally to the file hash. The first tw
 >
 > -- <cite>Loeliger, J., & McCullough, M. (2012). Version Control with Git: Powerful Tools and Techniques for Collaborative Software Development.</cite>
 
+# Usage of ObjectStore
+The object store simplifies the usage of the combination of both, the object manager and the version manager, by wrapping
+their functionality. It provides a simple interface which methods can be called for the different events `CreateEvent`, `ModifyEvent`, `DeleteEvent` and `MoveEvent`. The necessary operations to update the state of the index are then executed by the object store. 
 
-# Configuration
+```java
+
+// ...
+
+public void onChange(List<IEvent> eventList) {
+  // set up root directory to which paths of events are resolved absolutely (to access file contents for hashing, ...)
+  Path rootDir = Paths.get("myRootDir");
+  // set up storage adapter containing the directory for the object store
+  IStorageAdapter storageAdapter = new LocalStorageAdapter(rootDir.resolve(".sync"));
+  // rootDir: the directory to which paths of incoming events are resolved (to access file contents for hashing, ...)
+  // "index.json": the file in which the index of the object store is kept
+  // "object": the directory name in which information about the objects are hold
+  // storageAdapter: a storage adapter to write the object store to disk, cloud, ...
+  IObjectStore objectStore = new ObjectStore(rootDir, "index.json", "object", storageAdapter);
+  
+  for (IEvent event :  eventList) {
+    switch (event.getEventName()) {
+      case "event.modify":
+        objectStore.onModifyFile(event.getPath().toString(), event.getHash());
+        break;
+      case "event.create":
+        objectStore.onCreateFile(event.getPath().toString(), event.getHash());
+        break;
+      case "event.delete":
+        objectStore.onRemoveFile(event.getPath().toString());
+        break;
+      case "event.move":
+        objectStore.onMoveFile(((MoveEvent) event).getPath().toString(), ((MoveEvent) event).getNewPath().toString());
+        break;
+      default:
+        System.err.println("Event not recognized for processing");
+  }
+}
+
+// ...
+
+```
+
+# Usage of ObjectManager and VersionManager
 
 ```java
 
