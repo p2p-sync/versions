@@ -9,6 +9,14 @@ import java.util.List;
 public interface IObjectManager {
 
     /**
+     * Clears the index and the whole saved object history
+     *
+     * @throws InputOutputException
+     */
+    void clear()
+            throws InputOutputException;
+
+    /**
      * Writes the given PathObject to the object store
      *
      * @param path The path object to write
@@ -50,7 +58,7 @@ public interface IObjectManager {
      * @throws InputOutputException If reading the object store fails
      */
     List<PathObject> getChildren(String relativeParentFileName)
-    throws InputOutputException;
+            throws InputOutputException;
 
     /**
      * Returns the current instance of the object store's index

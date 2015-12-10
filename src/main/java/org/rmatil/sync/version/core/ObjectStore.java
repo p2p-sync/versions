@@ -15,10 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class ObjectStore implements IObjectStore {
@@ -26,6 +26,8 @@ public class ObjectStore implements IObjectStore {
     final static Logger logger = LoggerFactory.getLogger(ObjectStore.class);
 
     protected Path rootDir;
+
+    protected IStorageAdapter storageAdapter;
 
     protected IObjectManager objectManager;
 
@@ -36,6 +38,71 @@ public class ObjectStore implements IObjectStore {
         this.rootDir = rootDir;
         this.objectManager = new ObjectManager(indexFileName, objectDirName, storageAdapter);
         this.versionManager = new VersionManager(this.objectManager);
+        this.storageAdapter = storageAdapter;
+    }
+
+    public void sync(File rootSyncDir)
+            throws InputOutputException {
+        if (null == rootSyncDir || ! rootSyncDir.exists()) {
+            throw new InputOutputException("Can not sync index. Root of synchronized folder does not exist.");
+        }
+
+        // clear object store
+        this.objectManager.clear();
+
+        File[] files = rootSyncDir.listFiles();
+        if (null == files) {
+            logger.info("Abort sync of object store, no files in given directory");
+            return;
+        }
+
+        // recreate objects
+        for (File file : files) {
+            Path relativeSyncFolder = this.rootDir.relativize(this.storageAdapter.getRootDir());
+            if (file.getAbsolutePath().equals(this.rootDir.resolve(relativeSyncFolder).toFile().getAbsolutePath())) {
+                // ignore sync folder
+                logger.trace("Ignoring sync folder from being created in the index");
+                continue;
+            }
+
+            this.syncChild(file);
+        }
+    }
+
+    protected void syncChild(File file)
+            throws InputOutputException {
+        Path relativePathToRootDir = this.rootDir.relativize(file.toPath());
+
+        try {
+            // throws an exception if path does not exist
+            PathObject oldObject = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePathToRootDir.toString()));
+        } catch (InputOutputException e) {
+            // file does not exist yet, so we create it
+            logger.debug("No object stored for file " + relativePathToRootDir.toString() + ". Creating...");
+            try {
+
+                String hash = null;
+                if (file.isFile()) {
+                    hash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), file);
+                }
+
+                this.onCreateFile(relativePathToRootDir.toString(), hash);
+            } catch (IOException e1) {
+                logger.error("Could not create path object for file " + relativePathToRootDir.toString() + ". Message: " + e1.getMessage());
+            }
+        }
+
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (null == children) {
+                logger.trace("Children does not contain any children. Stopping to sync deeper");
+                return;
+            }
+
+            for (File child : children) {
+                this.syncChild(child);
+            }
+        }
     }
 
     public void onCreateFile(String relativePath, String contentHash)
@@ -53,7 +120,6 @@ public class ObjectStore implements IObjectStore {
         if (pathToFileWithoutFilename.endsWith("/")) {
             pathToFileWithoutFilename = pathToFileWithoutFilename.substring(0, pathToFileWithoutFilename.length() - 1);
         }
-
 
         PathType pathType = null;
         if (absolutePathOnFs.toFile().isDirectory()) {
@@ -93,18 +159,6 @@ public class ObjectStore implements IObjectStore {
     public void onMoveFile(String oldRelativePath, String newRelativePath)
             throws InputOutputException {
         logger.debug("Moving object for " + oldRelativePath);
-
-        // move all objects for the directories content
-        // THIS SHOULD NOT BE NEEDED IF ADDDIRECTORYCONTENTMODIFIER IS USED
-//        File oldFile = this.rootDir.resolve(oldRelativePath).toFile();
-//        if (oldFile.exists() && oldFile.isDirectory() && null != oldFile.listFiles()) {
-//            Path newPath = Paths.get(newRelativePath);
-//            for (File child : Arrays.asList(oldFile.listFiles())) {
-//                Path relativeChildToParentPath = Paths.get(oldRelativePath).relativize(child.toPath());
-//                logger.trace("Moving child object for move from " + this.rootDir.relativize(child.toPath()).toString() + " to " + newPath.resolve(relativeChildToParentPath).toString());
-//                this.onMoveFile(this.rootDir.relativize(child.toPath()).toString(), newPath.resolve(relativeChildToParentPath).toString());
-//            }
-//        }
 
         PathObject oldObject = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), oldRelativePath));
         PathObject newObject = new PathObject(

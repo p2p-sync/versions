@@ -56,6 +56,24 @@ public class ObjectManager implements IObjectManager {
         }
     }
 
+    public void clear()
+            throws InputOutputException {
+        PathElement objectPath = new PathElement(this.objectDirName);
+        PathElement indexPath = new PathElement(this.indexFileName);
+
+        // delete all objects
+        if (this.storageAdapter.exists(StorageType.DIRECTORY, objectPath)) {
+            this.storageAdapter.delete(objectPath);
+        } else {
+            logger.info("Could not remove object folder (No such file or directory)");
+        }
+
+        // recreate empty index
+        this.index = new Index(new HashMap<>());
+
+        this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
+    }
+
     public void writeObject(PathObject path)
             throws InputOutputException {
         logger.trace("Writing path object for file " + path.getAbsolutePath());
@@ -137,8 +155,13 @@ public class ObjectManager implements IObjectManager {
         String prefix = hash.substring(0, 2);
         String postfix = hash.substring(2);
 
-        IPathElement prefixDir = new PathElement(prefix);
-        IPathElement postfixDir = new PathElement(prefix + "/" + postfix);
+        IPathElement objectDir = new PathElement(this.objectDirName);
+        if (! this.storageAdapter.exists(StorageType.DIRECTORY, objectDir)) {
+            this.storageAdapter.persist(StorageType.DIRECTORY, objectDir, null);
+        }
+
+        IPathElement prefixDir = new PathElement(this.objectDirName + "/" + prefix);
+        IPathElement postfixDir = new PathElement(this.objectDirName + "/" + prefix + "/" + postfix);
 
         if (! this.storageAdapter.exists(StorageType.DIRECTORY, prefixDir)) {
             this.storageAdapter.persist(StorageType.DIRECTORY, prefixDir, null);
@@ -148,14 +171,14 @@ public class ObjectManager implements IObjectManager {
             this.storageAdapter.persist(StorageType.DIRECTORY, postfixDir, null);
         }
 
-        return prefix + "/" + postfix;
+        return this.objectDirName + "/" + prefix + "/" + postfix;
     }
 
     protected String getPathToHash(String hash) {
         String prefix = hash.substring(0, 2);
         String postfix = hash.substring(2);
 
-        return prefix + "/" + postfix;
+        return this.objectDirName + "/" + prefix + "/" + postfix;
     }
 
     protected String getAbsolutePathToHash(String hash) {

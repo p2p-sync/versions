@@ -2,7 +2,20 @@ package org.rmatil.sync.version.api;
 
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 
+import java.io.File;
+
 public interface IObjectStore {
+
+    /**
+     * Syncs the index content with the
+     * index in the object store
+     *
+     * @param rootSyncDir The absolute path to the synchronized directory root
+     *
+     * @throws InputOutputException If accessing the filesystem fails somewhere
+     */
+    void sync(File rootSyncDir)
+            throws InputOutputException;
 
     /**
      * This method should be invoked when a new file is created to store

@@ -15,6 +15,7 @@ import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectManager;
+import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
 import org.rmatil.sync.version.core.model.Version;
@@ -130,7 +131,7 @@ public class ObjectManagerTest {
         String prefix = fileNameHash.substring(0, 2);
         String postifx = fileNameHash.substring(2);
 
-        IPathElement pathToObject = new PathElement(prefix + "/" + postifx + "/" + fileNameHash + ".json");
+        IPathElement pathToObject = new PathElement("objects/" + prefix + "/" + postifx + "/" + fileNameHash + ".json");
 
         assertTrue("Object was not created", storageAdapter.exists(StorageType.FILE, pathToObject));
 
@@ -191,4 +192,38 @@ public class ObjectManagerTest {
         objectManager.removeObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathObject.getAbsolutePath()));
     }
 
+    @Test
+    public void testClear()
+            throws InputOutputException {
+        objectManager.writeObject(pathObject);
+
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, new ArrayList<>(), new ArrayList<>());
+        objectManager.writeObject(dirObject);
+
+        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, false, new ArrayList<>(), new ArrayList<>());
+        objectManager.writeObject(anotherObject);
+
+        Index origIndex = objectManager.getIndex();
+        assertEquals("not all files are in the index", 3, origIndex.getPaths().size());
+
+        String pathObjectHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathObject.getAbsolutePath());
+        assertNotNull("pathObject should not be null", objectManager.getObject(pathObjectHash));
+        String dirObjectHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), dirObject.getAbsolutePath());
+        assertNotNull("pathObject should not be null", objectManager.getObject(dirObjectHash));
+        String anotherObjectHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), anotherObject.getAbsolutePath());
+        assertNotNull("pathObject should not be null", objectManager.getObject(anotherObjectHash));
+
+        objectManager.clear();
+
+        assertEquals("Paths in index are not cleared", 0, objectManager.getIndex().getPaths().size());
+
+        thrown.expect(InputOutputException.class);
+        objectManager.getObject(pathObjectHash);
+
+        thrown.expect(InputOutputException.class);
+        objectManager.getObject(dirObjectHash);
+
+        thrown.expect(InputOutputException.class);
+        objectManager.getObject(anotherObjectHash);
+    }
 }

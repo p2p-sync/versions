@@ -1,6 +1,9 @@
 package org.rmatil.sync.version.test.core;
 
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
@@ -8,6 +11,7 @@ import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectStore;
+import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.test.config.Config;
 import org.rmatil.sync.version.test.util.APathTest;
@@ -37,10 +41,14 @@ public class ObjectStoreTest {
 
     @BeforeClass
     public static void setUp()
-            throws InputOutputException {
+            throws InputOutputException, IOException {
         APathTest.setUp();
 
-        storageAdapter = new LocalStorageAdapter(ROOT_TEST_DIR);
+        if (! Files.exists(ROOT_TEST_DIR.resolve(".sync"))) {
+            Files.createDirectory(ROOT_TEST_DIR.resolve(".sync"));
+        }
+
+        storageAdapter = new LocalStorageAdapter(ROOT_TEST_DIR.resolve(".sync"));
         objectStore = new ObjectStore(ROOT_TEST_DIR, "index.json", "object", storageAdapter);
     }
 
@@ -74,7 +82,10 @@ public class ObjectStoreTest {
     @Test
     public void testOnCreateDir()
             throws IOException, InterruptedException, InputOutputException {
-        Files.createDirectory(testDir);
+
+        if (! Files.exists(testDir)) {
+            Files.createDirectory(testDir);
+        }
 
         // wait a bit for file creation
         Thread.sleep(100L);
@@ -187,5 +198,48 @@ public class ObjectStoreTest {
 
         assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
         assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).toString()));
+    }
+
+    @Test
+    public void testSync()
+            throws IOException, InterruptedException, InputOutputException {
+        if (! Files.exists(testDir)) {
+            Files.createDirectory(testDir);
+        }
+
+        if (! Files.exists(testDir.resolve("myOtherFile.txt"))) {
+            Files.createFile(testDir.resolve("myOtherFile.txt"));
+        }
+
+        if (! Files.exists(ROOT_TEST_DIR.resolve(Paths.get("otherDir")))) {
+            Files.createDirectory(ROOT_TEST_DIR.resolve(Paths.get("otherDir")));
+        }
+
+        // wait a bit for file creation
+        Thread.sleep(100L);
+
+        objectStore.getObjectManager().clear();
+
+        // wait for all files to be deleted
+        Thread.sleep(200L);
+
+        objectStore.sync(ROOT_TEST_DIR.toFile());
+
+        Index index = objectStore.getObjectManager().getIndex();
+
+        String key1 = Paths.get("myDir").toString();
+        String key2 = Paths.get("myDir").resolve("myOtherFile.txt").toString();
+        String key3 = Paths.get("otherDir").toString();
+
+        assertTrue(index.getPaths().containsKey(key1));
+        assertTrue(index.getPaths().containsKey(key2));
+        assertTrue(index.getPaths().containsKey(key3));
+
+        // should not throw an exception
+        objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key1));
+        objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key2));
+        objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key3));
+
+        objectStore.getObjectManager().clear();
     }
 }
