@@ -4,7 +4,7 @@ import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IPathElement;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.api.StorageType;
-import org.rmatil.sync.persistence.core.local.PathElement;
+import org.rmatil.sync.persistence.core.local.LocalPathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.IObjectManager;
 import org.rmatil.sync.version.config.Config;
@@ -37,7 +37,7 @@ public class ObjectManager implements IObjectManager {
         this.indexFileName = indexFileName;
         this.objectDirName = objectDirName;
 
-        IPathElement indexPath = new PathElement(this.indexFileName);
+        IPathElement indexPath = new LocalPathElement(this.indexFileName);
 
         try {
             // create the index from the stored file
@@ -58,8 +58,8 @@ public class ObjectManager implements IObjectManager {
 
     public void clear()
             throws InputOutputException {
-        PathElement objectPath = new PathElement(this.objectDirName);
-        PathElement indexPath = new PathElement(this.indexFileName);
+        LocalPathElement objectPath = new LocalPathElement(this.objectDirName);
+        LocalPathElement indexPath = new LocalPathElement(this.indexFileName);
 
         // delete all objects
         if (this.storageAdapter.exists(StorageType.DIRECTORY, objectPath)) {
@@ -84,8 +84,8 @@ public class ObjectManager implements IObjectManager {
 
         String pathToObject = this.createObjectDirIfNotExists(fileNameHash);
 
-        IPathElement indexPath = new PathElement(this.indexFileName);
-        IPathElement objectPath = new PathElement(pathToObject + "/" + fileNameHash + ".json");
+        IPathElement indexPath = new LocalPathElement(this.indexFileName);
+        IPathElement objectPath = new LocalPathElement(pathToObject + "/" + fileNameHash + ".json");
 
         logger.trace("Writing path object to " + objectPath.getPath());
         logger.trace("Writing index to "  + indexPath.getPath());
@@ -98,7 +98,7 @@ public class ObjectManager implements IObjectManager {
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
 
-        IPathElement objectPath = new PathElement(pathToHash);
+        IPathElement objectPath = new LocalPathElement(pathToHash);
 
         byte[] content = this.storageAdapter.read(objectPath);
         String json = new String(content, StandardCharsets.UTF_8);
@@ -112,8 +112,8 @@ public class ObjectManager implements IObjectManager {
 
         PathObject pathObjectToDelete = this.getObject(fileNameHash);
         logger.trace("Removing path object for file " + pathObjectToDelete.getAbsolutePath());
-        IPathElement objectPath = new PathElement(pathToHash);
-        IPathElement indexPath = new PathElement(this.indexFileName);
+        IPathElement objectPath = new LocalPathElement(pathToHash);
+        IPathElement indexPath = new LocalPathElement(this.indexFileName);
 
         // remove object file, i.e. the file containing versions, ...
         if (this.storageAdapter.exists(StorageType.FILE, objectPath)) {
@@ -155,13 +155,13 @@ public class ObjectManager implements IObjectManager {
         String prefix = hash.substring(0, 2);
         String postfix = hash.substring(2);
 
-        IPathElement objectDir = new PathElement(this.objectDirName);
+        IPathElement objectDir = new LocalPathElement(this.objectDirName);
         if (! this.storageAdapter.exists(StorageType.DIRECTORY, objectDir)) {
             this.storageAdapter.persist(StorageType.DIRECTORY, objectDir, null);
         }
 
-        IPathElement prefixDir = new PathElement(this.objectDirName + "/" + prefix);
-        IPathElement postfixDir = new PathElement(this.objectDirName + "/" + prefix + "/" + postfix);
+        IPathElement prefixDir = new LocalPathElement(this.objectDirName + "/" + prefix);
+        IPathElement postfixDir = new LocalPathElement(this.objectDirName + "/" + prefix + "/" + postfix);
 
         if (! this.storageAdapter.exists(StorageType.DIRECTORY, prefixDir)) {
             this.storageAdapter.persist(StorageType.DIRECTORY, prefixDir, null);

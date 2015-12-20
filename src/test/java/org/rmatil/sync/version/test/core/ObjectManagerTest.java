@@ -9,8 +9,8 @@ import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IPathElement;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.api.StorageType;
+import org.rmatil.sync.persistence.core.local.LocalPathElement;
 import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
-import org.rmatil.sync.persistence.core.local.PathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
@@ -131,7 +131,7 @@ public class ObjectManagerTest {
         String prefix = fileNameHash.substring(0, 2);
         String postifx = fileNameHash.substring(2);
 
-        IPathElement pathToObject = new PathElement("objects/" + prefix + "/" + postifx + "/" + fileNameHash + ".json");
+        IPathElement pathToObject = new LocalPathElement("objects/" + prefix + "/" + postifx + "/" + fileNameHash + ".json");
 
         assertTrue("Object was not created", storageAdapter.exists(StorageType.FILE, pathToObject));
 
