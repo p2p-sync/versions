@@ -25,7 +25,7 @@ public class VersionManager implements IVersionManager {
         this.objectManager = objectManager;
     }
 
-    public List<Version> getVersions(String pathToFile)
+    public synchronized List<Version> getVersions(String pathToFile)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
 
@@ -33,7 +33,7 @@ public class VersionManager implements IVersionManager {
         return pathObject.getVersions();
     }
 
-    public void addVersion(Version version, String pathToFile)
+    public synchronized void addVersion(Version version, String pathToFile)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
 
@@ -42,7 +42,7 @@ public class VersionManager implements IVersionManager {
         this.objectManager.writeObject(pathObject);
     }
 
-    public void removeVersion(Version version, String pathToFile)
+    public synchronized void removeVersion(Version version, String pathToFile)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
 

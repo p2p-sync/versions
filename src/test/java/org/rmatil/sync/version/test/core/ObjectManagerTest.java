@@ -1,9 +1,6 @@
 package org.rmatil.sync.version.test.core;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IPathElement;
@@ -80,6 +77,12 @@ public class ObjectManagerTest {
     @AfterClass
     public static void tearDown() {
         FileUtil.delete(ROOT_TEST_DIR.toFile());
+    }
+
+    @Before
+    public void before()
+            throws InputOutputException {
+        objectManager.clear();
     }
 
     @Test

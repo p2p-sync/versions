@@ -56,7 +56,7 @@ public class ObjectManager implements IObjectManager {
         }
     }
 
-    public void clear()
+    public synchronized void clear()
             throws InputOutputException {
         LocalPathElement objectPath = new LocalPathElement(this.objectDirName);
         LocalPathElement indexPath = new LocalPathElement(this.indexFileName);
@@ -74,7 +74,7 @@ public class ObjectManager implements IObjectManager {
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
 
-    public void writeObject(PathObject path)
+    public synchronized void writeObject(PathObject path)
             throws InputOutputException {
         logger.trace("Writing path object for file " + path.getAbsolutePath());
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), path.getAbsolutePath());
@@ -94,7 +94,7 @@ public class ObjectManager implements IObjectManager {
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
 
-    public PathObject getObject(String fileNameHash)
+    public synchronized PathObject getObject(String fileNameHash)
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
 
@@ -106,7 +106,7 @@ public class ObjectManager implements IObjectManager {
         return PathObject.fromJson(json);
     }
 
-    public void removeObject(String fileNameHash)
+    public synchronized void removeObject(String fileNameHash)
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
 
@@ -127,7 +127,7 @@ public class ObjectManager implements IObjectManager {
         logger.trace("Rewriting index after removing of file " + pathObjectToDelete.getAbsolutePath());
     }
 
-    public List<PathObject> getChildren(String relativeParentFileName)
+    public synchronized List<PathObject> getChildren(String relativeParentFileName)
             throws InputOutputException {
         List<PathObject> children = new ArrayList<>();
 
@@ -150,7 +150,7 @@ public class ObjectManager implements IObjectManager {
         return this.indexFileName;
     }
 
-    protected String createObjectDirIfNotExists(String hash)
+    protected synchronized String createObjectDirIfNotExists(String hash)
             throws InputOutputException {
         String prefix = hash.substring(0, 2);
         String postfix = hash.substring(2);
