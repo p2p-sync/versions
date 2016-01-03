@@ -193,11 +193,16 @@ public class ObjectStoreTest {
 
         Thread.sleep(500L);
 
-        objectStore.onMoveFile(ROOT_TEST_DIR.relativize(testDir.resolve("myOtherFile.txt")).toString(), ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString());
-        objectStore.onMoveFile(ROOT_TEST_DIR.relativize(testDir).toString(), ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).toString());
 
-        assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
-        assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).toString()));
+        String oldFilePath = ROOT_TEST_DIR.relativize(testDir.resolve("myOtherFile.txt")).toString();
+        String newFilePath = ROOT_TEST_DIR.relativize(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName()).resolve("myOtherFile.txt")).toString();
+        objectStore.onMoveFile(oldFilePath, newFilePath);
+        String oldDirPath = ROOT_TEST_DIR.relativize(testDir).toString();
+        String newDirPath = ROOT_TEST_DIR.relativize(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName())).toString();
+        objectStore.onMoveFile(oldDirPath, newDirPath);
+
+        assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
+        assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).toString()));
     }
 
     @Test
