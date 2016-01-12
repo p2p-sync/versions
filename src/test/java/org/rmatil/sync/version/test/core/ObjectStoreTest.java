@@ -90,13 +90,13 @@ public class ObjectStoreTest {
         // wait a bit for file creation
         Thread.sleep(100L);
 
-        objectStore.onCreateFile(ROOT_TEST_DIR.relativize(testDir).toString(), null);
+        objectStore.onCreateFile(ROOT_TEST_DIR.relativize(testDir).toString(), "someDirHash");
 
         PathObject pathObject = objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), testDir.getFileName().toString()));
 
         assertEquals("Name is not equal", testDir.getFileName().toString(), pathObject.getName());
         assertEquals("Versions are not present", 1, pathObject.getVersions().size());
-        assertEquals("Hash is not equal", null, pathObject.getVersions().get(0).getHash());
+        assertEquals("Hash is not equal", "someDirHash", pathObject.getVersions().get(0).getHash());
         assertEquals("PathType is not a directory", PathType.DIRECTORY, pathObject.getPathType());
 
         assertTrue("Index does not contain file", objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testDir).toString()));

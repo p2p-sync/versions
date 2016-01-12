@@ -82,7 +82,7 @@ public class ObjectStore implements IObjectStore {
             try {
 
                 String hash = null;
-                if (file.isFile()) {
+                if (file.isFile() || file.isDirectory()) {
                     hash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), file);
                 }
 
