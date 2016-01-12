@@ -114,7 +114,7 @@ public class ObjectStore implements IObjectStore {
 
         // filename.txt
         // myPath/to/filename.txt
-        int idx = relativePath.indexOf(relativePathToWatchedDir.getFileName().toString());
+        int idx = relativePath.lastIndexOf(relativePathToWatchedDir.getFileName().toString());
         String pathToFileWithoutFilename = relativePath.substring(0, idx);
 
         if (pathToFileWithoutFilename.endsWith("/")) {
