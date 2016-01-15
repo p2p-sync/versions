@@ -39,6 +39,18 @@ public interface IObjectManager {
             throws InputOutputException;
 
     /**
+     * Returns the path object for the file on the given relative path
+     *
+     * @param relativeFilePath The relative path of which to get the path object
+     *
+     * @return The path object
+     *
+     * @throws InputOutputException If reading the object store fails
+     */
+    PathObject getObjectForPath(String relativeFilePath)
+            throws InputOutputException;
+
+    /**
      * Removes the path object of the given file name hash from the object store
      *
      * @param fileNameHash The hash of the file name of which the path object should be removed

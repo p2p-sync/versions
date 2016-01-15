@@ -89,7 +89,7 @@ public class ObjectManager implements IObjectManager {
         IPathElement objectPath = new LocalPathElement(pathToObject + "/" + fileNameHash + ".json");
 
         logger.trace("Writing path object to " + objectPath.getPath());
-        logger.trace("Writing index to "  + indexPath.getPath());
+        logger.trace("Writing index to " + indexPath.getPath());
 
         this.storageAdapter.persist(StorageType.FILE, objectPath, path.toJson().getBytes());
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
@@ -105,6 +105,19 @@ public class ObjectManager implements IObjectManager {
         String json = new String(content, StandardCharsets.UTF_8);
 
         return PathObject.fromJson(json);
+    }
+
+    public synchronized PathObject getObjectForPath(String relativeFilePath)
+            throws InputOutputException {
+        UUID fileId = this.getIndex().getPathIdentifiers().get(relativeFilePath);
+
+        if (null == fileId) {
+            throw new InputOutputException("Could not read object for path " + relativeFilePath + ". No such file or directory");
+        }
+
+        String hashToFile = this.getIndex().getPaths().get(fileId);
+
+        return this.getObject(hashToFile);
     }
 
     public synchronized void removeObject(String fileNameHash)

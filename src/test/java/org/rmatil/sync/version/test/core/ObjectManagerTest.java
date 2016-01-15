@@ -159,8 +159,11 @@ public class ObjectManagerTest {
 
         PathObject readObject = objectManager.getObject(fileNameHash);
 
+        PathObject readObject2 = objectManager.getObjectForPath(pathObject.getAbsolutePath());
+
         assertFalse("Objects should not be equal", pathObject.equals(readObject));
         assertEquals("Object content should be equal", pathObject.toJson(), readObject.toJson());
+        assertEquals("Object contents should be equal", readObject.toJson(), readObject2.toJson());
     }
 
     @Test
