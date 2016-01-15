@@ -14,10 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ObjectManager implements IObjectManager {
 
@@ -51,7 +48,7 @@ public class ObjectManager implements IObjectManager {
             logger.error(e.getMessage());
             logger.info("Creating the index file at " + this.indexFileName);
 
-            this.index = new Index(new HashMap<>());
+            this.index = new Index(new HashMap<>(), new HashMap<>());
             this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
         }
     }
@@ -69,7 +66,7 @@ public class ObjectManager implements IObjectManager {
         }
 
         // recreate empty index
-        this.index = new Index(new HashMap<>());
+        this.index = new Index(new HashMap<>(), new HashMap<>());
 
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
@@ -79,6 +76,10 @@ public class ObjectManager implements IObjectManager {
         logger.trace("Writing path object for file " + path.getAbsolutePath());
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), path.getAbsolutePath());
         this.index.addPath(path.getAbsolutePath(), fileNameHash);
+
+        // add file id to path object
+        UUID fileId = this.index.getPathIdentifiers().get(path.getAbsolutePath());
+        path.setFileId(fileId);
 
         logger.trace("Calculated hash for file name: " + fileNameHash);
 
@@ -131,7 +132,7 @@ public class ObjectManager implements IObjectManager {
             throws InputOutputException {
         List<PathObject> children = new ArrayList<>();
 
-        for (Map.Entry<String, String> entry : this.index.getPaths().entrySet()) {
+        for (Map.Entry<String, UUID> entry : this.index.getPathIdentifiers().entrySet()) {
             // the parent is logically a directory, so to avoid getting the parent directory too,
             // we can add a slash on the path to the parent dir
             if (entry.getKey().startsWith(relativeParentFileName + "/")) {

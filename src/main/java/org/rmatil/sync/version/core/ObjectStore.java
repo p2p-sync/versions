@@ -134,8 +134,10 @@ public class ObjectStore implements IObjectStore {
 
         PathObject pathObject = new PathObject(
                 relativePathToWatchedDir.getFileName().toString(),
+                null, // is filled in by the object manager
                 pathToFileWithoutFilename,
                 pathType,
+                false,
                 false,
                 new ArrayList<>(),
                 versions
@@ -153,7 +155,22 @@ public class ObjectStore implements IObjectStore {
     public void onRemoveFile(String relativePath)
             throws InputOutputException {
         logger.debug("Removing object for " + relativePath);
-        this.objectManager.removeObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePath));
+
+        // just setting the deleted flag
+
+        PathObject object = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePath));
+        PathObject deletedObject = new PathObject(
+                object.getName(),
+                object.getFileId(),
+                Naming.getPathWithoutFileName(object.getName(), relativePath),
+                object.getPathType(),
+                object.isShared(),
+                true,
+                object.getSharers(),
+                object.getVersions()
+        );
+
+        this.objectManager.writeObject(deletedObject);
     }
 
     public void onMoveFile(String oldRelativePath, String newRelativePath)
@@ -163,9 +180,11 @@ public class ObjectStore implements IObjectStore {
         PathObject oldObject = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), oldRelativePath));
         PathObject newObject = new PathObject(
                 oldObject.getName(),
+                oldObject.getFileId(),
                 Naming.getPathWithoutFileName(oldObject.getName(), newRelativePath),
                 oldObject.getPathType(),
                 oldObject.isShared(),
+                oldObject.isDeleted(),
                 oldObject.getSharers(),
                 oldObject.getVersions()
         );

@@ -6,16 +6,21 @@ import org.rmatil.sync.version.api.PathType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class PathObject {
 
     protected static Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
-    ;
 
     /**
      * The name of the directory or file (without a path)
      */
     protected String name;
+
+    /**
+     * The globally unique file id
+     */
+    protected UUID fileId;
 
     /**
      * The path to the file or directory without the filename
@@ -33,6 +38,11 @@ public class PathObject {
     protected boolean isShared;
 
     /**
+     * Whether the corresponding file on disk is deleted
+     */
+    protected boolean isDeleted;
+
+    /**
      * A list of sharers of this file
      */
     protected List<Sharer> sharers;
@@ -43,27 +53,30 @@ public class PathObject {
     protected List<Version> versions;
 
     /**
-     * @param name     The name of the file or directory (without the path to it)
-     * @param path     The path to the file or directory (without the name of it)
-     * @param pathType The type of the file
-     * @param isShared Whether this file is shared
-     * @param sharers  A list of sharers
-     * @param versions A list of versions
+     * @param name      The name of the file or directory (without the path to it)
+     * @param fileId    The globally unique file id
+     * @param path      The path to the file or directory (without the name of it)
+     * @param pathType  The type of the file
+     * @param isShared  Whether this file is shared
+     * @param isDeleted Whether the path on disk is deleted
+     * @param sharers   A list of sharers
+     * @param versions  A list of versions
      */
-    public PathObject(String name, String path, PathType pathType, boolean isShared, List<Sharer> sharers, List<Version> versions) {
+    public PathObject(String name, UUID fileId, String path, PathType pathType, boolean isShared, boolean isDeleted, List<Sharer> sharers, List<Version> versions) {
         this.name = name;
+        this.fileId = fileId;
         this.path = path;
         this.pathType = pathType;
         this.isShared = isShared;
-
+        this.isDeleted = isDeleted;
         this.sharers = sharers;
         if (null == this.sharers) {
-            this.sharers = new ArrayList<Sharer>();
+            this.sharers = new ArrayList<>();
         }
 
         this.versions = versions;
         if (null == this.versions) {
-            this.versions = new ArrayList<Version>();
+            this.versions = new ArrayList<>();
         }
     }
 
@@ -74,6 +87,24 @@ public class PathObject {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Sets the globally unique file id
+     *
+     * @param fileId The globally unique file id
+     */
+    public void setFileId(UUID fileId) {
+        this.fileId = fileId;
+    }
+
+    /**
+     * Returns the globally unique identifier for this file
+     *
+     * @return The globally unique identifier
+     */
+    public UUID getFileId() {
+        return fileId;
     }
 
     /**
@@ -114,6 +145,15 @@ public class PathObject {
      */
     public boolean isShared() {
         return isShared;
+    }
+
+    /**
+     * Returns true if the path on disk is deleted
+     *
+     * @return True, if deleted on disk, false otherwise
+     */
+    public boolean isDeleted() {
+        return isDeleted;
     }
 
     /**

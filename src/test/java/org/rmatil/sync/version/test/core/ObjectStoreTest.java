@@ -1,9 +1,6 @@
 package org.rmatil.sync.version.test.core;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
@@ -57,6 +54,12 @@ public class ObjectStoreTest {
         APathTest.tearDown();
     }
 
+    @Before
+    public void before()
+            throws InputOutputException {
+        objectStore.getObjectManager().clear();
+    }
+
     @Test
     public void testOnCreateFile()
             throws IOException, InterruptedException, InputOutputException {
@@ -76,7 +79,7 @@ public class ObjectStoreTest {
         assertEquals("Hash is not equal", "myHash", pathObject.getVersions().get(0).getHash());
         assertEquals("PathType is not a file ", PathType.FILE, pathObject.getPathType());
 
-        assertTrue("Index does not contain file", objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testFile).toString()));
+        assertTrue("Index does not contain file", objectStore.getObjectManager().getIndex().getPathIdentifiers().containsKey(ROOT_TEST_DIR.relativize(testFile).toString()));
     }
 
     @Test
@@ -99,7 +102,7 @@ public class ObjectStoreTest {
         assertEquals("Hash is not equal", "someDirHash", pathObject.getVersions().get(0).getHash());
         assertEquals("PathType is not a directory", PathType.DIRECTORY, pathObject.getPathType());
 
-        assertTrue("Index does not contain file", objectStore.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testDir).toString()));
+        assertTrue("Index does not contain file", objectStore.getObjectManager().getIndex().getPathIdentifiers().containsKey(ROOT_TEST_DIR.relativize(testDir).toString()));
     }
 
     @Test
@@ -156,14 +159,16 @@ public class ObjectStoreTest {
 
         Thread.sleep(100L);
 
-        System.err.println(objectStore.getObjectManager().getIndex().getPaths());
-        assertTrue("Entries in index are not empty", objectStore.getObjectManager().getIndex().getPaths().entrySet().isEmpty());
-        thrown.expect(InputOutputException.class);
-        objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testDir.resolve("myOtherFile.txt")).toString()));
-        thrown.expect(InputOutputException.class);
-        objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testDir).toString()));
-        thrown.expect(InputOutputException.class);
-        objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testFile).toString()));
+        assertEquals("Entries in index should not be removed", 3, objectStore.getObjectManager().getIndex().getPaths().entrySet().size());
+
+        PathObject file1 = objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testDir.resolve("myOtherFile.txt")).toString()));
+        assertTrue("File1 should be flagged as deleted", file1.isDeleted());
+
+        PathObject file2 = objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testDir).toString()));
+        assertTrue("File2 should be flagged as deleted", file2.isDeleted());
+
+        PathObject file3 = objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testFile).toString()));
+        assertTrue("File3 should be flagged as deleted", file3.isDeleted());
     }
 
     @Test
@@ -201,8 +206,8 @@ public class ObjectStoreTest {
         String newDirPath = ROOT_TEST_DIR.relativize(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName())).toString();
         objectStore.onMoveFile(oldDirPath, newDirPath);
 
-        assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
-        assertTrue(objectStore.getObjectManager().getIndex().getPaths().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).toString()));
+        assertTrue(objectStore.getObjectManager().getIndex().getPathIdentifiers().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
+        assertTrue(objectStore.getObjectManager().getIndex().getPathIdentifiers().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).toString()));
     }
 
     @Test
@@ -236,9 +241,9 @@ public class ObjectStoreTest {
         String key2 = Paths.get("myDir").resolve("myOtherFile.txt").toString();
         String key3 = Paths.get("otherDir").toString();
 
-        assertTrue(index.getPaths().containsKey(key1));
-        assertTrue(index.getPaths().containsKey(key2));
-        assertTrue(index.getPaths().containsKey(key3));
+        assertTrue(index.getPathIdentifiers().containsKey(key1));
+        assertTrue(index.getPathIdentifiers().containsKey(key2));
+        assertTrue(index.getPathIdentifiers().containsKey(key3));
 
         // should not throw an exception
         objectStore.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key1));

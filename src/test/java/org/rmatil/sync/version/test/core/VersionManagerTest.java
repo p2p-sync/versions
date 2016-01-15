@@ -61,13 +61,13 @@ public class VersionManagerTest {
         Sharer sharer1 = new Sharer("192.168.1.1", AccessType.READ);
         Sharer sharer2 = new Sharer("192.168.3.2", AccessType.WRITE);
 
-        List<Sharer> sharers = new ArrayList<Sharer>();
+        List<Sharer> sharers = new ArrayList<>();
         sharers.add(sharer1);
         sharers.add(sharer2);
 
-        List<Version> versions = new ArrayList<Version>();
+        List<Version> versions = new ArrayList<>();
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, sharers, versions);
+        pathObject = new PathObject("myFile.txt", null, "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
 
         objectManager.writeObject(pathObject);
     }

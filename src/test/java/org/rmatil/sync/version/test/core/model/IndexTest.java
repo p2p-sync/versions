@@ -18,14 +18,16 @@ public class IndexTest {
 
     @BeforeClass
     public static void setUp() {
-        index = new Index(new HashMap<>());
+        index = new Index(new HashMap<>(), new HashMap<>());
     }
 
     @Test
     public void testAccessors() {
         index.addPath(PATH_TO_FILE, HASH_OF_FILE_PATH);
+        assertEquals("PathIdentifier is not added", 1, index.getPathIdentifiers().size());
         assertEquals("Path is not added", 1, index.getPaths().size());
         index.removePath(PATH_TO_FILE);
+        assertEquals("PathIdentifier is not removed", 0, index.getPathIdentifiers().size());
         assertEquals("Path is not removed", 0, index.getPaths().size());
     }
 }
