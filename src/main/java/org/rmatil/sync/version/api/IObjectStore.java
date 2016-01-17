@@ -1,8 +1,12 @@
 package org.rmatil.sync.version.api;
 
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
+import org.rmatil.sync.version.core.ObjectStore;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 
 public interface IObjectStore {
 
@@ -62,6 +66,21 @@ public interface IObjectStore {
      * @throws InputOutputException If moving the path object fails
      */
     void onMoveFile(String oldRelativePath, String newRelativePath)
+            throws InputOutputException;
+
+    /**
+     * Merges the given object store into this one. If files are missing
+     * or an outdated version is detected, then its path is contained in the returned
+     * list. All such paths have then to be refetched from the client of which the given
+     * object store is fetched from.
+     *
+     * @param otherObjectStore The object store to merge into this one
+     *
+     * @return A list of relative paths which are either outdated or missing on the file system
+     *
+     * @throws InputOutputException If reading the other object store fails
+     */
+    HashMap<ObjectStore.MergedObjectType, Set<String>> mergeObjectStore(IObjectStore otherObjectStore)
             throws InputOutputException;
 
     /**

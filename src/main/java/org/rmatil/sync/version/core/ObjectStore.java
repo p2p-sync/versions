@@ -9,6 +9,7 @@ import org.rmatil.sync.version.api.IObjectStore;
 import org.rmatil.sync.version.api.IVersionManager;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.config.Config;
+import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Version;
 import org.slf4j.Logger;
@@ -18,12 +19,26 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ObjectStore implements IObjectStore {
 
-    final static Logger logger = LoggerFactory.getLogger(ObjectStore.class);
+    private final static Logger logger = LoggerFactory.getLogger(ObjectStore.class);
+
+    /**
+     * The path type of merged file paths
+     */
+    public enum MergedObjectType {
+        /**
+         * The path was deleted on the remote, but not in this object store
+         */
+        DELETED,
+
+        /**
+         * The path was changed, i.e. has a different newer version
+         */
+        CHANGED
+    }
 
     protected Path rootDir;
 
@@ -41,6 +56,7 @@ public class ObjectStore implements IObjectStore {
         this.storageAdapter = storageAdapter;
     }
 
+    @Override
     public void sync(File rootSyncDir)
             throws InputOutputException {
         if (null == rootSyncDir || ! rootSyncDir.exists()) {
@@ -105,12 +121,27 @@ public class ObjectStore implements IObjectStore {
         }
     }
 
+    @Override
     public void onCreateFile(String relativePath, String contentHash)
             throws InputOutputException {
         logger.debug("Creating object for " + relativePath);
 
+        Path absolutePathOnFs = this.rootDir.resolve(relativePath);
+
+        PathType pathType = null;
+        if (absolutePathOnFs.toFile().isDirectory()) {
+            pathType = PathType.DIRECTORY;
+        } else if (absolutePathOnFs.toFile().isFile()) {
+            pathType = PathType.FILE;
+        }
+
+        this.onCreateFile(relativePath, pathType, contentHash);
+    }
+
+    protected void onCreateFile(String relativePath, PathType pathType, String contentHash)
+            throws InputOutputException {
+
         Path relativePathToWatchedDir = Paths.get(relativePath);
-        Path absolutePathOnFs = this.rootDir.resolve(relativePathToWatchedDir);
 
         // filename.txt
         // myPath/to/filename.txt
@@ -119,13 +150,6 @@ public class ObjectStore implements IObjectStore {
 
         if (pathToFileWithoutFilename.endsWith("/")) {
             pathToFileWithoutFilename = pathToFileWithoutFilename.substring(0, pathToFileWithoutFilename.length() - 1);
-        }
-
-        PathType pathType = null;
-        if (absolutePathOnFs.toFile().isDirectory()) {
-            pathType = PathType.DIRECTORY;
-        } else if (absolutePathOnFs.toFile().isFile()) {
-            pathType = PathType.FILE;
         }
 
         Version v1 = new Version(contentHash);
@@ -146,12 +170,14 @@ public class ObjectStore implements IObjectStore {
         this.objectManager.writeObject(pathObject);
     }
 
+    @Override
     public void onModifyFile(String relativePath, String contentHash)
             throws InputOutputException {
         logger.debug("Modifying object for " + relativePath);
         this.versionManager.addVersion(new Version(contentHash), relativePath);
     }
 
+    @Override
     public void onRemoveFile(String relativePath)
             throws InputOutputException {
         logger.debug("Removing object for " + relativePath);
@@ -173,6 +199,7 @@ public class ObjectStore implements IObjectStore {
         this.objectManager.writeObject(deletedObject);
     }
 
+    @Override
     public void onMoveFile(String oldRelativePath, String newRelativePath)
             throws InputOutputException {
         logger.debug("Moving object for " + oldRelativePath);
@@ -194,7 +221,77 @@ public class ObjectStore implements IObjectStore {
 
     }
 
+    @Override
     public IObjectManager getObjectManager() {
         return this.objectManager;
+    }
+
+    @Override
+    public HashMap<MergedObjectType, Set<String>> mergeObjectStore(IObjectStore otherObjectStore)
+            throws InputOutputException {
+        HashMap<MergedObjectType, Set<String>> missingOrOutdatedPaths = new HashMap<>();
+        missingOrOutdatedPaths.put(MergedObjectType.CHANGED, new HashSet<>());
+        missingOrOutdatedPaths.put(MergedObjectType.DELETED, new HashSet<>());
+
+        Index index = this.getObjectManager().getIndex();
+        Index otherIndex = otherObjectStore.getObjectManager().getIndex();
+
+        // check if we have the file
+        for (Map.Entry<String, UUID> entry : otherIndex.getPathIdentifiers().entrySet()) {
+            if (null != index.getPathIdentifiers().get(entry.getKey())) {
+                // ok, we got the file too, now check the version and if the file should be deleted
+                String hashToFile = otherIndex.getPaths().get(entry.getValue());
+                PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
+
+                // check if we should have deleted that file
+                if (otherPathObject.isDeleted()) {
+                    this.onRemoveFile(entry.getKey());
+                    missingOrOutdatedPaths.get(MergedObjectType.DELETED).add(entry.getKey());
+                }
+
+                List<Version> versions = this.getObjectManager().getObject(hashToFile).getVersions();
+                Version lastVersion = versions.get(Math.max(0, versions.size() - 1));
+
+                // check whether the other version list has our version, if not
+                // then we have a more recent version
+                if (otherPathObject.getVersions().contains(lastVersion)) {
+                    // check whether our version is earlier in the list than the other
+                    if (versions.indexOf(lastVersion) < otherPathObject.getVersions().indexOf(lastVersion)) {
+                        // we have to copy the last other version
+                        versions.add(otherPathObject.getVersions().get(Math.max(0, otherPathObject.getVersions().size() - 1)));
+                        // add the path to the file to the outdated files
+                        missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
+                    }
+
+                    // add all missing other versions between our last one and the last one of the other object store
+                    if (versions.size() < otherPathObject.getVersions().size()) {
+                        versions.addAll(otherPathObject.getVersions().subList(
+                                otherPathObject.getVersions().indexOf(lastVersion),
+                                otherPathObject.getVersions().size() - 1
+                        ));
+                        missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
+                    }
+                }
+            } else {
+                // we do not have the file yet, so check whether it should be deleted (flag)
+                // or if we just do not have it and have to request it later on
+                String hashToFile = otherIndex.getPaths().get(entry.getValue());
+                PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
+
+                if (otherPathObject.isDeleted()) {
+                    // we remove the file from our object store too
+                    this.onRemoveFile(entry.getKey());
+                    missingOrOutdatedPaths.get(MergedObjectType.DELETED).add(entry.getKey());
+                } else {
+                    // the file was not deleted, so we have to add it to our object store
+                    this.onCreateFile(entry.getKey(), otherPathObject.getPathType(), otherPathObject.getVersions().get(Math.max(0, otherPathObject.getVersions().size() - 1)).getHash());
+                    // add the path to the file to the missing files
+                    missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
+                }
+            }
+        }
+
+
+        return missingOrOutdatedPaths;
     }
 }
