@@ -278,11 +278,8 @@ public class ObjectStore implements IObjectStore {
                 String hashToFile = otherIndex.getPaths().get(entry.getValue());
                 PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
 
-                if (otherPathObject.isDeleted()) {
-                    // we remove the file from our object store too
-                    this.onRemoveFile(entry.getKey());
-                    missingOrOutdatedPaths.get(MergedObjectType.DELETED).add(entry.getKey());
-                } else {
+                // no need to remove the file from our index since it did not exist anyway
+                if (! otherPathObject.isDeleted()) {
                     // the file was not deleted, so we have to add it to our object store
                     this.onCreateFile(entry.getKey(), otherPathObject.getPathType(), otherPathObject.getVersions().get(Math.max(0, otherPathObject.getVersions().size() - 1)).getHash());
                     // add the path to the file to the missing files
