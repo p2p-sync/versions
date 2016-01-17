@@ -164,6 +164,16 @@ public class ObjectManager implements IObjectManager {
         return this.indexFileName;
     }
 
+    @Override
+    public IPathElement getObjectDir() {
+        return new LocalPathElement(this.objectDirName);
+    }
+
+    @Override
+    public IStorageAdapter getStorageAdapater() {
+        return this.storageAdapter;
+    }
+
     protected synchronized String createObjectDirIfNotExists(String hash)
             throws InputOutputException {
         String prefix = hash.substring(0, 2);

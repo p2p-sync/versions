@@ -1,5 +1,8 @@
 package org.rmatil.sync.version.api;
 
+import org.rmatil.sync.persistence.api.IPathElement;
+import org.rmatil.sync.persistence.api.IStorageAdapter;
+import org.rmatil.sync.persistence.core.local.LocalPathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
@@ -86,4 +89,18 @@ public interface IObjectManager {
      */
     String getIndexFileName();
 
+    /**
+     * Returns the object directory
+     *
+     * @return The object directory path
+     */
+    IPathElement getObjectDir();
+
+    /**
+     * Returns the storage adapter to access the object store manually.
+     * The returned storage adapter will have the the object store as root path
+     *
+     * @return The storage adapter for the object store
+     */
+    IStorageAdapter getStorageAdapater();
 }
