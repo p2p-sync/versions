@@ -59,6 +59,12 @@ public class ObjectStore implements IObjectStore {
     @Override
     public void sync(File rootSyncDir)
             throws InputOutputException {
+        this.sync(rootSyncDir, new ArrayList<>());
+    }
+
+    @Override
+    public void sync(File rootSyncDir, List<String> ignoredFiles)
+            throws InputOutputException {
         if (null == rootSyncDir || ! rootSyncDir.exists()) {
             throw new InputOutputException("Can not sync index. Root of synchronized folder does not exist.");
         }
@@ -75,7 +81,8 @@ public class ObjectStore implements IObjectStore {
         // recreate objects
         for (File file : files) {
             Path relativeSyncFolder = this.rootDir.relativize(this.storageAdapter.getRootDir());
-            if (file.getAbsolutePath().equals(this.rootDir.resolve(relativeSyncFolder).toFile().getAbsolutePath())) {
+            if (file.getAbsolutePath().equals(this.rootDir.resolve(relativeSyncFolder).toFile().getAbsolutePath()) ||
+                    ignoredFiles.contains(this.rootDir.relativize(file.toPath()).toString())) {
                 // ignore sync folder
                 logger.trace("Ignoring sync folder from being created in the index");
                 continue;
