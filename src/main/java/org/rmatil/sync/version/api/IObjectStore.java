@@ -21,16 +21,27 @@ public interface IObjectStore {
     void sync(File rootSyncDir)
             throws InputOutputException;
 
-	/**
-	 * Syncs the index content with the index in the object store
-	 *
-	 * @param rootSyncDir The absolute path to the synchronized directory root
-	 * @param ignoredFiles A list of ignored files (relative to the root directory of the object store)
-	 *
-	 * @throws InputOutputException If accessing the filesystem fails somewhere
-	 */
-	void sync(File rootSyncDir, List<String> ignoredFiles)
-			throws InputOutputException;
+    /**
+     * Syncs the index content with the index in the object store
+     *
+     * @param rootSyncDir  The absolute path to the synchronized directory root
+     * @param ignoredFiles A list of ignored files (relative to the root directory of the object store)
+     *
+     * @throws InputOutputException If accessing the filesystem fails somewhere
+     */
+    void sync(File rootSyncDir, List<String> ignoredFiles)
+            throws InputOutputException;
+
+    /**
+     * Syncs the index content only of the given file to the object store. If the given
+     * file is a directory, all contents will be synchronized too.
+     *
+     * @param file The file to synchronize
+     *
+     * @throws InputOutputException If the file does not exist
+     */
+    void syncFile(File file)
+            throws InputOutputException;
 
     /**
      * This method should be invoked when a new file is created to store

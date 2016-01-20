@@ -14,9 +14,7 @@ import org.rmatil.sync.version.test.config.Config;
 import org.rmatil.sync.version.test.util.APathTest;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -267,8 +265,15 @@ public class ObjectStoreTest {
 
         // should not throw an exception
         objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key1));
-        objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key2));
+        PathObject fileObject = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key2));
         objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key3));
+
+        Path writtenFile = Files.write(testDir.resolve("myOtherFile.txt"), "this is a modified string...".getBytes(), StandardOpenOption.APPEND);
+        objectStore1.syncFile(writtenFile.toFile());
+        PathObject fileObjectAfterSync = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key2));
+
+        assertEquals("Version size should be one", 1, fileObjectAfterSync.getVersions().size());
+        assertNotEquals("File hash should be different", fileObject.getVersions().get(fileObject.getVersions().size() - 1).getHash(), fileObjectAfterSync.getVersions().get(fileObjectAfterSync.getVersions().size() - 1).getHash());
 
         objectStore1.getObjectManager().clear();
     }

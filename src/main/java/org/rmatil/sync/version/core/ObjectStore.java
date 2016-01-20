@@ -92,6 +92,20 @@ public class ObjectStore implements IObjectStore {
         }
     }
 
+    @Override
+    public void syncFile(File file)
+            throws InputOutputException {
+        if (! file.exists()) {
+            throw new InputOutputException(file.getPath() + " (No such file or directory)");
+        }
+
+        // first remove object to force recreation
+        Path relativePathToRootDir = this.rootDir.relativize(file.toPath());
+        this.getObjectManager().removeObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePathToRootDir.toString()));
+
+        this.syncChild(file);
+    }
+
     protected void syncChild(File file)
             throws InputOutputException {
         Path relativePathToRootDir = this.rootDir.relativize(file.toPath());
