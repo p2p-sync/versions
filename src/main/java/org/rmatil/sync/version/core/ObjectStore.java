@@ -37,7 +37,12 @@ public class ObjectStore implements IObjectStore {
         /**
          * The path was changed, i.e. has a different newer version
          */
-        CHANGED
+        CHANGED,
+
+        /**
+         * The path that created a conflict
+         */
+        CONFLICT
     }
 
     protected Path rootDir;
@@ -253,6 +258,7 @@ public class ObjectStore implements IObjectStore {
         HashMap<MergedObjectType, Set<String>> missingOrOutdatedPaths = new HashMap<>();
         missingOrOutdatedPaths.put(MergedObjectType.CHANGED, new HashSet<>());
         missingOrOutdatedPaths.put(MergedObjectType.DELETED, new HashSet<>());
+        missingOrOutdatedPaths.put(MergedObjectType.CONFLICT, new HashSet<>());
 
         Index index = this.getObjectManager().getIndex();
         Index otherIndex = otherObjectStore.getObjectManager().getIndex();
@@ -292,6 +298,9 @@ public class ObjectStore implements IObjectStore {
                         ));
                         missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
                     }
+                } else if (otherPathObject.getVersions().size() > 0) {
+                    // there is a conflict on the file
+                    missingOrOutdatedPaths.get(MergedObjectType.CONFLICT).add(entry.getKey());
                 }
             } else {
                 // we do not have the file yet, so check whether it should be deleted (flag)
@@ -302,7 +311,17 @@ public class ObjectStore implements IObjectStore {
                 // no need to remove the file from our index since it did not exist anyway
                 if (! otherPathObject.isDeleted()) {
                     // the file was not deleted, so we have to add it to our object store
-                    this.onCreateFile(entry.getKey(), otherPathObject.getPathType(), otherPathObject.getVersions().get(Math.max(0, otherPathObject.getVersions().size() - 1)).getHash());
+                    int versionCtr = 0;
+                    for (Version version : otherPathObject.getVersions()) {
+                        if (0 == versionCtr) {
+                            this.onCreateFile(entry.getKey(), version.getHash());
+                        } else {
+                            this.onModifyFile(entry.getKey(), version.getHash());
+                        }
+
+                        versionCtr++;
+                    }
+
                     // add the path to the file to the missing files
                     missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
                 }

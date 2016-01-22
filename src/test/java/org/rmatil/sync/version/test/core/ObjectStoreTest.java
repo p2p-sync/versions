@@ -1,5 +1,6 @@
 package org.rmatil.sync.version.test.core;
 
+import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
@@ -10,15 +11,22 @@ import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectStore;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
+import org.rmatil.sync.version.core.model.Version;
 import org.rmatil.sync.version.test.config.Config;
 import org.rmatil.sync.version.test.util.APathTest;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
 public class ObjectStoreTest {
@@ -306,11 +314,76 @@ public class ObjectStoreTest {
         HashMap<ObjectStore.MergedObjectType, Set<String>> outdatedOrMissingPaths = objectStore1.mergeObjectStore(objectStore2);
         Set<String> outDatedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CHANGED);
         Set<String> deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
+        Set<String> conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
+
+        assertThat("There should be no conflict file", conflictPaths, is(IsEmptyCollection.empty()));
 
         assertThat("List should contain entry for myFile2WhichIsDeletedOnTheOtherClient.txt", deletedPaths, hasItem("myFile2WhichIsDeletedOnTheOtherClient.txt"));
 
         assertThat("List should contain entry for myDir2", outDatedPaths, hasItem("myDir2"));
         assertThat("List should contain entry for myDir2/myInnerFile.txt", outDatedPaths, hasItem("myDir2/myInnerFile.txt"));
         assertThat("List should contain entry for myDir2/myOtherInnerFile.txt", outDatedPaths, hasItem("myDir2/myOtherInnerFile.txt"));
+
+        objectStore1.getObjectManager().clear();
+        objectStore2.getObjectManager().clear();
+
+        // this should be a conflict
+        objectStore1.onCreateFile("myFile.txt", "someHash");
+        objectStore2.onCreateFile("myFile.txt", "someOtherHash");
+
+        outdatedOrMissingPaths = objectStore1.mergeObjectStore(objectStore2);
+        outDatedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CHANGED);
+        deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
+        conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
+
+        assertThat("There should be no outdated paths", outDatedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be conflict paths", conflictPaths, is(not(IsEmptyCollection.empty())));
+
+        assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
+
+
+        objectStore1.getObjectManager().clear();
+        objectStore2.getObjectManager().clear();
+
+        objectStore1.onCreateFile("myFile.txt", "someHash");
+        objectStore2.onCreateFile("myFile.txt", "someHash");
+        // this should be a conflict
+        objectStore1.onModifyFile("myFile.txt", "someConflictHash");
+        objectStore2.onModifyFile("myFile.txt", "someOtherConflictHash");
+
+        outdatedOrMissingPaths = objectStore1.mergeObjectStore(objectStore2);
+        outDatedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CHANGED);
+        deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
+        conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
+
+        assertThat("There should be no outdated paths", outDatedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be conflict paths", conflictPaths, is(not(IsEmptyCollection.empty())));
+
+        assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
+
+        objectStore1.getObjectManager().clear();
+        objectStore2.getObjectManager().clear();
+
+        // check for all versions to be contained
+        objectStore2.onCreateFile("myFile.txt", "someHash");
+        objectStore2.onModifyFile("myFile.txt", "someConflictHash");
+
+        outdatedOrMissingPaths = objectStore1.mergeObjectStore(objectStore2);
+        outDatedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CHANGED);
+        deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
+        conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
+
+        assertThat("There should be outdated paths", outDatedPaths, is(not(IsEmptyCollection.empty())));
+        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no conflict paths", conflictPaths, is(IsEmptyCollection.empty()));
+
+        assertThat("There is the outdated path", outDatedPaths, hasItem("myFile.txt"));
+
+        PathObject pathObject = objectStore1.getObjectManager().getObjectForPath("myFile.txt");
+        assertThat("Versions must contain both hashes", pathObject.getVersions(), hasItems(new Version("someHash"), new Version("someConflictHash")));
+        assertEquals("Last version must be someConflictHash", pathObject.getVersions().get(pathObject.getVersions().size() - 1).getHash(), "someConflictHash");
+
     }
 }
