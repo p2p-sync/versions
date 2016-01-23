@@ -314,7 +314,7 @@ public class ObjectStore implements IObjectStore {
                     int versionCtr = 0;
                     for (Version version : otherPathObject.getVersions()) {
                         if (0 == versionCtr) {
-                            this.onCreateFile(entry.getKey(), version.getHash());
+                            this.onCreateFile(entry.getKey(), otherPathObject.getPathType(), version.getHash());
                         } else {
                             this.onModifyFile(entry.getKey(), version.getHash());
                         }
