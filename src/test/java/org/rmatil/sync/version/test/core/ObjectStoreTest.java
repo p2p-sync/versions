@@ -385,5 +385,22 @@ public class ObjectStoreTest {
         assertThat("Versions must contain both hashes", pathObject.getVersions(), hasItems(new Version("someHash"), new Version("someConflictHash")));
         assertEquals("Last version must be someConflictHash", pathObject.getVersions().get(pathObject.getVersions().size() - 1).getHash(), "someConflictHash");
 
+        objectStore1.getObjectManager().clear();
+        objectStore2.getObjectManager().clear();
+
+        // this should be a conflict
+        objectStore1.onCreateFile("myFile.txt", "someHash");
+        objectStore2.onCreateFile("myFile.txt", "someOtherHash");
+
+        outdatedOrMissingPaths = objectStore1.mergeObjectStore(objectStore2);
+        outDatedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CHANGED);
+        deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
+        conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
+
+        assertThat("There should be no outdated paths", outDatedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be conflict paths", conflictPaths, is(not(IsEmptyCollection.empty())));
+
+        assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
     }
 }
