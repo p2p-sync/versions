@@ -1,6 +1,9 @@
 package org.rmatil.sync.version.core.model;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.rmatil.sync.version.api.AccessType;
+import sun.security.provider.SHA;
 
 public class Sharer {
 
@@ -38,5 +41,34 @@ public class Sharer {
 
     public void setAccessType(AccessType accessType) {
         this.accessType = accessType;
+    }
+
+
+    @Override
+    public int hashCode() {
+        // http://stackoverflow.com/questions/27581/what-issues-should-be-considered-when-overriding-equals-and-hashcode-in-java
+        return new HashCodeBuilder(17, 31)
+                .append(address)
+                .append(port)
+                .append(accessType)
+                .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        // http://stackoverflow.com/questions/27581/what-issues-should-be-considered-when-overriding-equals-and-hashcode-in-java
+        if (! (obj instanceof Sharer)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+
+        Sharer rhs = (Sharer) obj;
+        return new EqualsBuilder()
+                .append(address, rhs.getAddress())
+                .append(port, rhs.getPort())
+                .append(accessType, rhs.getAccessType())
+                .isEquals();
     }
 }
