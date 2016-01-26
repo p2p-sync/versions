@@ -60,8 +60,8 @@ public class SharerManagerTest {
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
         sharerManager = new SharerManager(objectManager);
 
-        Sharer sharer1 = new Sharer("Eleanor Fant", "192.168.1.1", 80, AccessType.READ);
-        Sharer sharer2 = new Sharer("Eric Widget", "192.168.3.2", 80, AccessType.WRITE);
+        Sharer sharer1 = new Sharer("Eleanor Fant", AccessType.READ);
+        Sharer sharer2 = new Sharer("Eric Widget", AccessType.WRITE);
 
         Set<Sharer> sharers = new HashSet<>();
         sharers.add(sharer1);
@@ -86,7 +86,7 @@ public class SharerManagerTest {
         assertFalse("sharers should not be empty", sharers.isEmpty());
         assertEquals("There should be 2 sharers", 2, sharers.size());
 
-        Sharer s1 = new Sharer("Piff Jenkins", "127.0.0.1", 1234, AccessType.READ);
+        Sharer s1 = new Sharer("Piff Jenkins", AccessType.READ);
         sharerManager.addSharer(s1, pathObject.getAbsolutePath());
 
         Set<Sharer> sharers1 = sharerManager.getSharer(pathObject.getAbsolutePath());
