@@ -3,9 +3,10 @@ package org.rmatil.sync.version.core.model;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.rmatil.sync.version.api.AccessType;
-import sun.security.provider.SHA;
 
 public class Sharer {
+
+	protected String username;
 
     protected String address;
 
@@ -13,13 +14,22 @@ public class Sharer {
 
     protected AccessType accessType;
 
-    public Sharer(String address, int port, AccessType accessType) {
-        this.address = address;
+    public Sharer(String username, String address, int port, AccessType accessType) {
+        this.username = username;
+		this.address = address;
         this.port = port;
         this.accessType = accessType;
     }
 
-    public String getAddress() {
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getAddress() {
         return address;
     }
 

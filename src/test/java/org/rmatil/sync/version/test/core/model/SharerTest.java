@@ -11,17 +11,22 @@ public class SharerTest {
 
     protected static Sharer sharer;
 
+    protected static final String USERNAME = "Pelican Steve";
+
     protected static final String ADDRESS = "192.168.1.1";
 
     protected static final int PORT = 4003;
 
     @BeforeClass
     public static void setUp() {
-        sharer = new Sharer(ADDRESS, PORT, AccessType.WRITE);
+        sharer = new Sharer(USERNAME, ADDRESS, PORT, AccessType.WRITE);
     }
 
     @Test
     public void testAccessor() {
+        assertEquals("Username not equal", USERNAME, sharer.getUsername());
+        sharer.setUsername("Shequondolisa Bivouac");
+        assertEquals("Username not equal after change", "Shequondolisa Bivouac", sharer.getUsername());
         assertEquals("Address not equal", ADDRESS, sharer.getAddress());
         sharer.setAddress("123");
         assertEquals("Address not equal after change", "123", sharer.getAddress());

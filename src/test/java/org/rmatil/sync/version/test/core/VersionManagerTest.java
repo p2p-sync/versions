@@ -60,8 +60,8 @@ public class VersionManagerTest {
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
         versionManager = new VersionManager(objectManager);
 
-        Sharer sharer1 = new Sharer("192.168.1.1", 80, AccessType.READ);
-        Sharer sharer2 = new Sharer("192.168.3.2", 80, AccessType.WRITE);
+        Sharer sharer1 = new Sharer("Weir Doe", "192.168.1.1", 80, AccessType.READ);
+        Sharer sharer2 = new Sharer("Niles Peppertrout", "192.168.3.2", 80, AccessType.WRITE);
 
         Set<Sharer> sharers = new HashSet<>();
         sharers.add(sharer1);
