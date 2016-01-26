@@ -10,44 +10,38 @@ public class Index {
 
     protected static Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();;
 
-    protected Map<String, UUID> pathIdentifiers;
+    protected Map<String, String> paths;
 
-    protected Map<UUID, String> paths;
+    protected Map<UUID, String> sharedPaths;
 
-    public Index(Map<String, UUID> pathIdentifiers, Map<UUID, String> paths) {
-        this.pathIdentifiers = pathIdentifiers;
+    public Index(Map<String, String> paths, Map<UUID, String> sharedPaths) {
         this.paths = paths;
+        this.sharedPaths = sharedPaths;
 
     }
 
     public void addPath(String pathToFile, String hashOfFilePath) {
-
-        UUID fileId = this.getPathIdentifiers().get(pathToFile);
-
-        if (null == fileId) {
-            fileId = UUID.randomUUID();
-            this.paths.put(fileId, hashOfFilePath);
-        }
-
-        this.pathIdentifiers.put(pathToFile, fileId);
+        this.paths.put(pathToFile, hashOfFilePath);
     }
 
     public void removePath(String pathToFile) {
-        UUID fileId = this.pathIdentifiers.get(pathToFile);
-
-        this.pathIdentifiers.remove(pathToFile);
-
-        if (null != fileId) {
-            this.paths.remove(fileId);
-        }
+        this.paths.remove(pathToFile);
     }
 
-    public Map<String, UUID> getPathIdentifiers() {
-        return this.pathIdentifiers;
+    public Map<String, String> getPaths() {
+        return this.paths;
     }
 
-    public Map<UUID, String> getPaths() {
-        return paths;
+    public void addSharedPath(UUID sharedFileId, String hashOfFilePath) {
+        this.sharedPaths.put(sharedFileId, hashOfFilePath);
+    }
+
+    public void removeSharedPath(UUID sharedFileId) {
+        this.sharedPaths.remove(sharedFileId);
+    }
+
+    public Map<UUID, String> getSharedPaths() {
+        return sharedPaths;
     }
 
     public String toJson() {

@@ -77,9 +77,9 @@ public class ObjectManager implements IObjectManager {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), path.getAbsolutePath());
         this.index.addPath(path.getAbsolutePath(), fileNameHash);
 
-        // add file id to path object
-        UUID fileId = this.index.getPathIdentifiers().get(path.getAbsolutePath());
-        path.setFileId(fileId);
+        if (null != path.getFileId()) {
+            this.index.addSharedPath(path.getFileId(), fileNameHash);
+        }
 
         logger.trace("Calculated hash for file name: " + fileNameHash);
 
@@ -109,15 +109,9 @@ public class ObjectManager implements IObjectManager {
 
     public synchronized PathObject getObjectForPath(String relativeFilePath)
             throws InputOutputException {
-        UUID fileId = this.getIndex().getPathIdentifiers().get(relativeFilePath);
+        String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativeFilePath);
 
-        if (null == fileId) {
-            throw new InputOutputException("Could not read object for path " + relativeFilePath + ". No such file or directory");
-        }
-
-        String hashToFile = this.getIndex().getPaths().get(fileId);
-
-        return this.getObject(hashToFile);
+        return this.getObject(fileNameHash);
     }
 
     public synchronized void removeObject(String fileNameHash)
@@ -137,6 +131,12 @@ public class ObjectManager implements IObjectManager {
 
         logger.trace("Removing file from index...");
         this.index.removePath(pathObjectToDelete.getAbsolutePath());
+
+        // remove also the shared file
+        if (null != pathObjectToDelete.getFileId()) {
+            this.index.removeSharedPath(pathObjectToDelete.getFileId());
+        }
+
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
         logger.trace("Rewriting index after removing of file " + pathObjectToDelete.getAbsolutePath());
     }
@@ -145,7 +145,7 @@ public class ObjectManager implements IObjectManager {
             throws InputOutputException {
         List<PathObject> children = new ArrayList<>();
 
-        for (Map.Entry<String, UUID> entry : this.index.getPathIdentifiers().entrySet()) {
+        for (Map.Entry<String, String> entry : this.index.getPaths().entrySet()) {
             // the parent is logically a directory, so to avoid getting the parent directory too,
             // we can add a slash on the path to the parent dir
             if (entry.getKey().startsWith(relativeParentFileName + "/")) {

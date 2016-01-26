@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -58,10 +60,10 @@ public class VersionManagerTest {
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
         versionManager = new VersionManager(objectManager);
 
-        Sharer sharer1 = new Sharer("192.168.1.1", AccessType.READ);
-        Sharer sharer2 = new Sharer("192.168.3.2", AccessType.WRITE);
+        Sharer sharer1 = new Sharer("192.168.1.1", 80, AccessType.READ);
+        Sharer sharer2 = new Sharer("192.168.3.2", 80, AccessType.WRITE);
 
-        List<Sharer> sharers = new ArrayList<>();
+        Set<Sharer> sharers = new HashSet<>();
         sharers.add(sharer1);
         sharers.add(sharer2);
 

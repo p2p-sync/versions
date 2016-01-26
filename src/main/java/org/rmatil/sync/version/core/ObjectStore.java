@@ -11,6 +11,7 @@ import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.config.Config;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
+import org.rmatil.sync.version.core.model.Sharer;
 import org.rmatil.sync.version.core.model.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ public class ObjectStore implements IObjectStore {
     private final static Logger logger = LoggerFactory.getLogger(ObjectStore.class);
 
     /**
-     * The path type of merged file paths
+     * The path type of merged file sharedPaths
      */
     public enum MergedObjectType {
         /**
@@ -189,7 +190,7 @@ public class ObjectStore implements IObjectStore {
                 pathType,
                 false,
                 false,
-                new ArrayList<>(),
+                new HashSet<>(),
                 versions
         );
 
@@ -218,7 +219,7 @@ public class ObjectStore implements IObjectStore {
                 object.getPathType(),
                 object.isShared(),
                 true,
-                object.getSharers(),
+                new HashSet<>(),
                 object.getVersions()
         );
 
@@ -264,10 +265,10 @@ public class ObjectStore implements IObjectStore {
         Index otherIndex = otherObjectStore.getObjectManager().getIndex();
 
         // check if we have the file
-        for (Map.Entry<String, UUID> entry : otherIndex.getPathIdentifiers().entrySet()) {
-            if (null != index.getPathIdentifiers().get(entry.getKey())) {
+        for (Map.Entry<String, String> entry : otherIndex.getPaths().entrySet()) {
+            if (null != index.getPaths().get(entry.getKey())) {
                 // ok, we got the file too, now check the version and if the file should be deleted
-                String hashToFile = otherIndex.getPaths().get(entry.getValue());
+                String hashToFile = otherIndex.getPaths().get(entry.getKey());
                 PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
 
                 // check if we should have deleted that file
@@ -302,10 +303,17 @@ public class ObjectStore implements IObjectStore {
                     // there is a conflict on the file
                     missingOrOutdatedPaths.get(MergedObjectType.CONFLICT).add(entry.getKey());
                 }
+
+                // merge sharers
+                Set<Sharer> sharers = this.getObjectManager().getObject(hashToFile).getSharers();
+                Set<Sharer> otherSharers = otherPathObject.getSharers();
+
+                sharers.addAll(otherSharers);
+
             } else {
                 // we do not have the file yet, so check whether it should be deleted (flag)
                 // or if we just do not have it and have to request it later on
-                String hashToFile = otherIndex.getPaths().get(entry.getValue());
+                String hashToFile = otherIndex.getPaths().get(entry.getKey());
                 PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
 
                 // no need to remove the file from our index since it did not exist anyway

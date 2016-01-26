@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.rmatil.sync.version.api.PathType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class PathObject {
 
@@ -45,7 +43,7 @@ public class PathObject {
     /**
      * A list of sharers of this file
      */
-    protected List<Sharer> sharers;
+    protected Set<Sharer> sharers;
 
     /**
      * A list of versions of this file
@@ -62,7 +60,7 @@ public class PathObject {
      * @param sharers   A list of sharers
      * @param versions  A list of versions
      */
-    public PathObject(String name, UUID fileId, String path, PathType pathType, boolean isShared, boolean isDeleted, List<Sharer> sharers, List<Version> versions) {
+    public PathObject(String name, UUID fileId, String path, PathType pathType, boolean isShared, boolean isDeleted, Set<Sharer> sharers, List<Version> versions) {
         this.name = name;
         this.fileId = fileId;
         this.path = path;
@@ -71,7 +69,7 @@ public class PathObject {
         this.isDeleted = isDeleted;
         this.sharers = sharers;
         if (null == this.sharers) {
-            this.sharers = new ArrayList<>();
+            this.sharers = new HashSet<>();
         }
 
         this.versions = versions;
@@ -161,7 +159,7 @@ public class PathObject {
      *
      * @return The list of sharers
      */
-    public List<Sharer> getSharers() {
+    public Set<Sharer> getSharers() {
         return sharers;
     }
 

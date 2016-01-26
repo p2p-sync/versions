@@ -105,7 +105,7 @@ public class ObjectStoreTest {
         assertEquals("Hash is not equal", "myHash", pathObject.getVersions().get(0).getHash());
         assertEquals("PathType is not a file ", PathType.FILE, pathObject.getPathType());
 
-        assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPathIdentifiers().containsKey(ROOT_TEST_DIR.relativize(testFile).toString()));
+        assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testFile).toString()));
     }
 
     @Test
@@ -128,7 +128,7 @@ public class ObjectStoreTest {
         assertEquals("Hash is not equal", "someDirHash", pathObject.getVersions().get(0).getHash());
         assertEquals("PathType is not a directory", PathType.DIRECTORY, pathObject.getPathType());
 
-        assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPathIdentifiers().containsKey(ROOT_TEST_DIR.relativize(testDir).toString()));
+        assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testDir).toString()));
     }
 
     @Test
@@ -232,8 +232,8 @@ public class ObjectStoreTest {
         String newDirPath = ROOT_TEST_DIR.relativize(ROOT_TEST_DIR.resolve(Paths.get("otherDir")).resolve(testDir.getFileName())).toString();
         objectStore1.onMoveFile(oldDirPath, newDirPath);
 
-        assertTrue(objectStore1.getObjectManager().getIndex().getPathIdentifiers().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
-        assertTrue(objectStore1.getObjectManager().getIndex().getPathIdentifiers().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).toString()));
+        assertTrue(objectStore1.getObjectManager().getIndex().getPaths().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).resolve("myOtherFile.txt").toString()));
+        assertTrue(objectStore1.getObjectManager().getIndex().getPaths().containsKey(Paths.get("otherDir").resolve(testDir.getFileName()).toString()));
     }
 
     @Test
@@ -267,9 +267,9 @@ public class ObjectStoreTest {
         String key2 = Paths.get("myDir").resolve("myOtherFile.txt").toString();
         String key3 = Paths.get("otherDir").toString();
 
-        assertTrue(index.getPathIdentifiers().containsKey(key1));
-        assertTrue(index.getPathIdentifiers().containsKey(key2));
-        assertTrue(index.getPathIdentifiers().containsKey(key3));
+        assertTrue(index.getPaths().containsKey(key1));
+        assertTrue(index.getPaths().containsKey(key2));
+        assertTrue(index.getPaths().containsKey(key3));
 
         // should not throw an exception
         objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key1));
@@ -336,9 +336,9 @@ public class ObjectStoreTest {
         deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
         conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
 
-        assertThat("There should be no outdated paths", outDatedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be conflict paths", conflictPaths, is(not(IsEmptyCollection.empty())));
+        assertThat("There should be no outdated sharedPaths", outDatedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no deleted sharedPaths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be conflict sharedPaths", conflictPaths, is(not(IsEmptyCollection.empty())));
 
         assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
 
@@ -357,9 +357,9 @@ public class ObjectStoreTest {
         deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
         conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
 
-        assertThat("There should be no outdated paths", outDatedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be conflict paths", conflictPaths, is(not(IsEmptyCollection.empty())));
+        assertThat("There should be no outdated sharedPaths", outDatedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no deleted sharedPaths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be conflict sharedPaths", conflictPaths, is(not(IsEmptyCollection.empty())));
 
         assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
 
@@ -375,9 +375,9 @@ public class ObjectStoreTest {
         deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
         conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
 
-        assertThat("There should be outdated paths", outDatedPaths, is(not(IsEmptyCollection.empty())));
-        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be no conflict paths", conflictPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be outdated sharedPaths", outDatedPaths, is(not(IsEmptyCollection.empty())));
+        assertThat("There should be no deleted sharedPaths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no conflict sharedPaths", conflictPaths, is(IsEmptyCollection.empty()));
 
         assertThat("There is the outdated path", outDatedPaths, hasItem("myFile.txt"));
 
@@ -397,9 +397,9 @@ public class ObjectStoreTest {
         deletedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.DELETED);
         conflictPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CONFLICT);
 
-        assertThat("There should be no outdated paths", outDatedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be no deleted paths", deletedPaths, is(IsEmptyCollection.empty()));
-        assertThat("There should be conflict paths", conflictPaths, is(not(IsEmptyCollection.empty())));
+        assertThat("There should be no outdated sharedPaths", outDatedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be no deleted sharedPaths", deletedPaths, is(IsEmptyCollection.empty()));
+        assertThat("There should be conflict sharedPaths", conflictPaths, is(not(IsEmptyCollection.empty())));
 
         assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
     }

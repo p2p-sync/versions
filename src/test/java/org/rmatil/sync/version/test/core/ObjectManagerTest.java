@@ -24,9 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -58,10 +56,10 @@ public class ObjectManagerTest {
         storageAdapter = new LocalStorageAdapter(ROOT_TEST_DIR);
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
 
-        Sharer sharer1 = new Sharer("192.168.1.1", AccessType.READ);
-        Sharer sharer2 = new Sharer("192.168.3.2", AccessType.WRITE);
+        Sharer sharer1 = new Sharer("192.168.1.1", 80, AccessType.READ);
+        Sharer sharer2 = new Sharer("192.168.3.2", 80, AccessType.WRITE);
 
-        List<Sharer> sharers = new ArrayList<>();
+        Set<Sharer> sharers = new HashSet<>();
         sharers.add(sharer1);
         sharers.add(sharer2);
 
@@ -91,8 +89,8 @@ public class ObjectManagerTest {
             throws IOException, InputOutputException {
         // test constructor
         String expectedJson = "{\n" +
-                "  \"pathIdentifiers\": {},\n" +
-                "  \"paths\": {}\n" +
+                "  \"paths\": {},\n" +
+                "  \"sharedPaths\": {}\n" +
                 "}";
 
         byte[] content = Files.readAllBytes(ROOT_TEST_DIR.resolve(objectManager.getIndexFileName()));
@@ -128,13 +126,8 @@ public class ObjectManagerTest {
 
         String fileNameHash = Hash.hash(org.rmatil.sync.version.config.Config.DEFAULT.getHashingAlgorithm(), pathObject.getAbsolutePath());
 
-        assertTrue("Index does not contain new file", objectManager.getIndex().getPathIdentifiers().containsKey(pathObject.getAbsolutePath()));
-
-        UUID fileId = objectManager.getIndex().getPathIdentifiers().get(pathObject.getAbsolutePath());
-        assertTrue("Index does not contain new fileId", objectManager.getIndex().getPaths().containsKey(fileId));
+        assertTrue("Index does not contain new file", objectManager.getIndex().getPaths().containsKey(pathObject.getAbsolutePath()));
         assertTrue("Index does not contain new file hash", objectManager.getIndex().getPaths().containsValue(fileNameHash));
-        assertEquals("Index does not contain fileId at file dir", fileId, objectManager.getIndex().getPathIdentifiers().get(pathObject.getAbsolutePath()));
-        assertEquals("Index does not contain file hash at fileId", fileNameHash, objectManager.getIndex().getPaths().get(fileId));
 
         // check object
         String prefix = fileNameHash.substring(0, 2);
@@ -191,7 +184,7 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", null, "somePath/to", PathType.DIRECTORY, false, false, new ArrayList<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", null, "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
         List<PathObject> children = objectManager.getChildren("somePath/to/dir");
@@ -209,10 +202,10 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", null, "somePath/to", PathType.DIRECTORY, false, false, new ArrayList<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", null, "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
-        PathObject anotherObject = new PathObject("anotherFile.txt", null, "somePath/to/dir", PathType.FILE, false, false, new ArrayList<>(), new ArrayList<>());
+        PathObject anotherObject = new PathObject("anotherFile.txt", null, "somePath/to/dir", PathType.FILE, false, false, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(anotherObject);
 
         Index origIndex = objectManager.getIndex();
