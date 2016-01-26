@@ -275,6 +275,7 @@ public class ObjectStore implements IObjectStore {
                 if (otherPathObject.isDeleted()) {
                     this.onRemoveFile(entry.getKey());
                     missingOrOutdatedPaths.get(MergedObjectType.DELETED).add(entry.getKey());
+                    continue;
                 }
 
                 List<Version> versions = this.getObjectManager().getObject(hashToFile).getVersions();
