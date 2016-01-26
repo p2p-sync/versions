@@ -70,7 +70,9 @@ public class ObjectManagerTest {
         versions.add(v1);
         versions.add(v2);
 
-        pathObject = new PathObject("myFile.txt", null, "somePath/to/dir", PathType.FILE, true, false, sharers, versions);
+        UUID fileId = UUID.randomUUID();
+
+        pathObject = new PathObject("myFile.txt", fileId, "somePath/to/dir", PathType.FILE, true, false, sharers, versions);
     }
 
     @AfterClass
