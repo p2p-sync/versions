@@ -32,6 +32,11 @@ public class PathObjectTest {
         assertFalse("PathObject is not not shared", pathObject.isShared());
         assertEquals("Sharers are not empty", 0, pathObject.getSharers().size());
         assertEquals("Versions are not empty", 0, pathObject.getVersions().size());
+
+        UUID newFileId = UUID.randomUUID();
+        pathObject.setFileId(newFileId);
+        assertEquals("New FileId should be set", newFileId, pathObject.getFileId());
+
     }
 
 
