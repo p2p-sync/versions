@@ -30,12 +30,15 @@ public class PathObjectTest {
         assertEquals("FileId is not equals", FILE_ID, pathObject.getFileId());
         assertEquals("PathType is not equal", PathType.DIRECTORY, pathObject.getPathType());
         assertFalse("PathObject is not not shared", pathObject.isShared());
+        pathObject.setIsShared(true);
+        assertTrue("PathObject should be shared after sharing", pathObject.isShared());
         assertEquals("Sharers are not empty", 0, pathObject.getSharers().size());
         assertEquals("Versions are not empty", 0, pathObject.getVersions().size());
 
         UUID newFileId = UUID.randomUUID();
         pathObject.setFileId(newFileId);
         assertEquals("New FileId should be set", newFileId, pathObject.getFileId());
+
 
     }
 

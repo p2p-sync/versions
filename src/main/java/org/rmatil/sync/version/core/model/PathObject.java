@@ -146,6 +146,16 @@ public class PathObject {
     }
 
     /**
+     * Sets the flag whether the file represented by this
+     * path object is share or not
+     *
+     * @param isShared Whether the file is shared or not
+     */
+    public void setIsShared(boolean isShared) {
+        this.isShared = isShared;
+    }
+
+    /**
      * Returns true if the path on disk is deleted
      *
      * @return True, if deleted on disk, false otherwise
