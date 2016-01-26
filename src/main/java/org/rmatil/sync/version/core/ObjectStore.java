@@ -4,10 +4,7 @@ import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.commons.path.Naming;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
-import org.rmatil.sync.version.api.IObjectManager;
-import org.rmatil.sync.version.api.IObjectStore;
-import org.rmatil.sync.version.api.IVersionManager;
-import org.rmatil.sync.version.api.PathType;
+import org.rmatil.sync.version.api.*;
 import org.rmatil.sync.version.config.Config;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
@@ -54,11 +51,14 @@ public class ObjectStore implements IObjectStore {
 
     protected IVersionManager versionManager;
 
+    protected ISharerManager sharerManager;
+
     public ObjectStore(Path rootDir, String indexFileName, String objectDirName, IStorageAdapter storageAdapter)
             throws InputOutputException {
         this.rootDir = rootDir;
         this.objectManager = new ObjectManager(indexFileName, objectDirName, storageAdapter);
         this.versionManager = new VersionManager(this.objectManager);
+        this.sharerManager = new SharerManager(this.objectManager);
         this.storageAdapter = storageAdapter;
     }
 
@@ -251,6 +251,11 @@ public class ObjectStore implements IObjectStore {
     @Override
     public IObjectManager getObjectManager() {
         return this.objectManager;
+    }
+
+    @Override
+    public ISharerManager getSharerManager() {
+        return this.sharerManager;
     }
 
     @Override

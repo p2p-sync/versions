@@ -111,4 +111,11 @@ public interface IObjectStore {
      * @return The object manager
      */
     IObjectManager getObjectManager();
+
+    /**
+     * Returns the sharer manager to add sharers to the object store
+     *
+     * @return The sharer manager
+     */
+    ISharerManager getSharerManager();
 }

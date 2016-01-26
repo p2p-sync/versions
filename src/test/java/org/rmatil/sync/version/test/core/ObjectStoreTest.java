@@ -403,4 +403,10 @@ public class ObjectStoreTest {
 
         assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
     }
+
+    @Test
+    public void accessorTests() {
+        assertNotNull("sharer manager should be instantiated", objectStore1.getSharerManager());
+        assertNotNull("sharer manager should be instantiated", objectStore2.getSharerManager());
+    }
 }
