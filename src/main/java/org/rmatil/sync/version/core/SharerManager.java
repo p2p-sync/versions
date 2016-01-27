@@ -12,7 +12,6 @@ import org.rmatil.sync.version.core.model.Sharer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 public class SharerManager implements ISharerManager {
 
