@@ -1,11 +1,12 @@
 package org.rmatil.sync.version.test.core.model;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.core.model.Sharer;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -16,10 +17,17 @@ public class SharerTest {
 
     protected static final String USERNAME = "Pelican Steve";
 
-    @BeforeClass
-    public static void setUp() {
-        sharer = new Sharer(USERNAME, AccessType.WRITE, new ArrayList<>());
-        sharer2 = new Sharer(USERNAME, AccessType.WRITE, new ArrayList<>());
+    protected static List<String> list;
+
+    @Before
+    public void before() {
+        list = new ArrayList<>();
+        list.add("Version1");
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("Version1");
+        sharer = new Sharer(USERNAME, AccessType.WRITE, list);
+        sharer2 = new Sharer(USERNAME, AccessType.WRITE, list2);
     }
 
     @Test
@@ -31,11 +39,15 @@ public class SharerTest {
         sharer.setAccessType(AccessType.READ);
         assertEquals("AccessType not equal after changing", AccessType.READ, sharer.getAccessType());
 
-        assertArrayEquals("Sharing history should be empty", new ArrayList<String>().toArray(), sharer.getSharingHistory().toArray());
+        assertArrayEquals("Sharing history should not be empty", list.toArray(), sharer.getSharingHistory().toArray());
     }
 
     @Test
     public void testEquals() {
         assertTrue("Sharer should be equals", sharer.equals(sharer2));
+
+        Sharer sharer3 = new Sharer(USERNAME, AccessType.WRITE, new ArrayList<>());
+
+        assertFalse("Sharer3 should not be equal", sharer.equals(sharer3));
     }
 }

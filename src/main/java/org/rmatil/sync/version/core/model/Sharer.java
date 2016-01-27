@@ -47,11 +47,13 @@ public class Sharer {
     @Override
     public int hashCode() {
         // http://stackoverflow.com/questions/27581/what-issues-should-be-considered-when-overriding-equals-and-hashcode-in-java
-        return new HashCodeBuilder(17, 31)
+        HashCodeBuilder builder = new HashCodeBuilder(17, 31)
                 .append(username)
-                .append(accessType)
-                .append(sharingHistory)
-                .toHashCode();
+                .append(accessType);
+
+        this.sharingHistory.forEach(builder::append);
+
+        return builder.toHashCode();
     }
 
     @Override
@@ -65,10 +67,18 @@ public class Sharer {
         }
 
         Sharer rhs = (Sharer) obj;
-        return new EqualsBuilder()
+        EqualsBuilder builder = new EqualsBuilder()
                 .append(username, rhs.getUsername())
-                .append(accessType, rhs.getAccessType())
-                .append(sharingHistory, rhs.getSharingHistory())
-                .isEquals();
+                .append(accessType, rhs.getAccessType());
+
+        if (this.sharingHistory.size() == rhs.getSharingHistory().size()) {
+            for (int i = 0; i < this.sharingHistory.size(); i++) {
+                builder.append(this.sharingHistory.get(i), rhs.getSharingHistory().get(i));
+            }
+        } else {
+            builder.append(this.sharingHistory.size(), rhs.getSharingHistory().size());
+        }
+
+        return builder.isEquals();
     }
 }
