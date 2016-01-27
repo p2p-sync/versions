@@ -2,7 +2,6 @@ package org.rmatil.sync.version.api;
 
 import org.rmatil.sync.persistence.api.IPathElement;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
-import org.rmatil.sync.persistence.core.local.LocalPathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
@@ -52,6 +51,15 @@ public interface IObjectManager {
      */
     PathObject getObjectForPath(String relativeFilePath)
             throws InputOutputException;
+
+    /**
+     * Returns the corresponding hash for the given file path
+     *
+     * @param relativeFilePath The file path for which to get the hash
+     *
+     * @return The hash of the specified path
+     */
+    String getHashForPath(String relativeFilePath);
 
     /**
      * Removes the path object of the given file name hash from the object store

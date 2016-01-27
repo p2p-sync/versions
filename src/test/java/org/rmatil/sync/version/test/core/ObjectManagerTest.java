@@ -162,6 +162,13 @@ public class ObjectManagerTest {
     }
 
     @Test
+    public void testGetHashForPath() {
+        String fileName = "sync/my/path/to/myFile.txt";
+
+        assertEquals("Hash should be equal", Hash.hash(Config.DEFAULT.getHashingAlgorithm(), fileName), objectManager.getHashForPath(fileName));
+    }
+
+    @Test
     public void testRemoveObject()
             throws InputOutputException {
         thrown.expect(InputOutputException.class);

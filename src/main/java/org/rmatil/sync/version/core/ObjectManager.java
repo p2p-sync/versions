@@ -53,6 +53,7 @@ public class ObjectManager implements IObjectManager {
         }
     }
 
+    @Override
     public synchronized void clear()
             throws InputOutputException {
         LocalPathElement objectPath = new LocalPathElement(this.objectDirName);
@@ -71,6 +72,7 @@ public class ObjectManager implements IObjectManager {
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
 
+    @Override
     public synchronized void writeObject(PathObject path)
             throws InputOutputException {
         logger.trace("Writing path object for file " + path.getAbsolutePath());
@@ -95,6 +97,7 @@ public class ObjectManager implements IObjectManager {
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
 
+    @Override
     public synchronized PathObject getObject(String fileNameHash)
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
@@ -107,6 +110,7 @@ public class ObjectManager implements IObjectManager {
         return PathObject.fromJson(json);
     }
 
+    @Override
     public synchronized PathObject getObjectForPath(String relativeFilePath)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativeFilePath);
@@ -114,6 +118,12 @@ public class ObjectManager implements IObjectManager {
         return this.getObject(fileNameHash);
     }
 
+    @Override
+    public synchronized String getHashForPath(String relativeFilePath) {
+        return Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativeFilePath);
+    }
+
+    @Override
     public synchronized void removeObject(String fileNameHash)
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
@@ -141,6 +151,7 @@ public class ObjectManager implements IObjectManager {
         logger.trace("Rewriting index after removing of file " + pathObjectToDelete.getAbsolutePath());
     }
 
+    @Override
     public synchronized List<PathObject> getChildren(String relativeParentFileName)
             throws InputOutputException {
         List<PathObject> children = new ArrayList<>();
@@ -156,10 +167,12 @@ public class ObjectManager implements IObjectManager {
         return children;
     }
 
+    @Override
     public Index getIndex() {
         return this.index;
     }
 
+    @Override
     public String getIndexFileName() {
         return this.indexFileName;
     }
