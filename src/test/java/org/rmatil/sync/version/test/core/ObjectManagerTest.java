@@ -56,8 +56,8 @@ public class ObjectManagerTest {
         storageAdapter = new LocalStorageAdapter(ROOT_TEST_DIR);
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
 
-        Sharer sharer1 = new Sharer("Natalya Undergrowth", AccessType.READ);
-        Sharer sharer2 = new Sharer("Archibald Northbottom", AccessType.WRITE);
+        Sharer sharer1 = new Sharer("Natalya Undergrowth", AccessType.READ, new ArrayList<>());
+        Sharer sharer2 = new Sharer("Archibald Northbottom", AccessType.WRITE, new ArrayList<>());
 
         Set<Sharer> sharers = new HashSet<>();
         sharers.add(sharer1);

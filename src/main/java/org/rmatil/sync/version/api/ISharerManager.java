@@ -26,23 +26,24 @@ public interface ISharerManager {
     /**
      * Adds the given sharer for the file on the given path
      *
-     * @param sharer     The sharer to add
+     * @param username   The sharer's username to add
+     * @param accessType The access type which is granted to the sharer
      * @param pathToFile The path to the file
      *
      * @throws InputOutputException If adding the sharer failed
      */
-    void addSharer(Sharer sharer, String pathToFile)
+    void addSharer(String username, AccessType accessType, String pathToFile)
             throws InputOutputException;
 
     /**
      * Removes the given sharer from the file on the specified path
      *
-     * @param sharer     The sharer to remove
+     * @param username   The username of the sharer to remove
      * @param pathToFile The file path from which to remove the sharer
      *
      * @throws InputOutputException If removing the sharer failed
      */
-    void removeSharer(Sharer sharer, String pathToFile)
+    void removeSharer(String username, String pathToFile)
             throws InputOutputException;
 
     /**

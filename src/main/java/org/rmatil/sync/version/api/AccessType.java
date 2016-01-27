@@ -4,5 +4,7 @@ public enum AccessType {
 
     WRITE,
 
-    READ
+    READ,
+
+    ACCESS_REMOVED
 }

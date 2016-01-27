@@ -2,12 +2,15 @@ package org.rmatil.sync.version.core;
 
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
+import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.IObjectManager;
 import org.rmatil.sync.version.api.ISharerManager;
 import org.rmatil.sync.version.config.Config;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class SharerManager implements ISharerManager {
@@ -28,9 +31,19 @@ public class SharerManager implements ISharerManager {
     }
 
     @Override
-    public synchronized void addSharer(Sharer sharer, String pathToFile)
+    public synchronized void addSharer(String username, AccessType accessType, String pathToFile)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
+
+        String firstSharingHistoryEntry = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), accessType.name());
+
+        List<String> sharingHistory = new ArrayList<>();
+        sharingHistory.add(firstSharingHistoryEntry);
+        Sharer sharer = new Sharer(
+                username,
+                accessType,
+                sharingHistory
+        );
 
         PathObject pathObject = this.objectManager.getObject(fileNameHash);
         pathObject.getSharers().add(sharer);
@@ -38,13 +51,43 @@ public class SharerManager implements ISharerManager {
     }
 
     @Override
-    public synchronized void removeSharer(Sharer sharer, String pathToFile)
+    public synchronized void removeSharer(String username, String pathToFile)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
 
         PathObject pathObject = this.objectManager.getObject(fileNameHash);
-        // requires to overwrite equals
-        pathObject.getSharers().remove(sharer);
+
+        boolean isLastSharerForPath = true;
+        Sharer sharer = null;
+        for (Sharer entry : pathObject.getSharers()) {
+            if (entry.getUsername().equals(username)) {
+                sharer = entry;
+            } else {
+                isLastSharerForPath = false;
+            }
+        }
+
+        if (null == sharer) {
+            throw new InputOutputException("Can not remove sharer " + username + " since he is not present in the list");
+        }
+
+        // if the sharer is the last sharer for the file, we can remove the shared flag
+        if (isLastSharerForPath) {
+            pathObject.setIsShared(false);
+        }
+
+        String nextSharingHistoryEntry = "";
+        // make a hash of all previously history entries
+        for (String shareHistory :  sharer.getSharingHistory()) {
+            nextSharingHistoryEntry = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), nextSharingHistoryEntry + shareHistory);
+        }
+
+        // now add the new state to the history
+        nextSharingHistoryEntry = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), nextSharingHistoryEntry + AccessType.ACCESS_REMOVED.name());
+        sharer.getSharingHistory().add(nextSharingHistoryEntry);
+        sharer.setAccessType(AccessType.ACCESS_REMOVED);
+
+        pathObject.getSharers().add(sharer);
         this.objectManager.writeObject(pathObject);
     }
 

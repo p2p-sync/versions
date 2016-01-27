@@ -4,15 +4,20 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.rmatil.sync.version.api.AccessType;
 
+import java.util.List;
+
 public class Sharer {
 
     protected String username;
 
     protected AccessType accessType;
 
-    public Sharer(String username, AccessType accessType) {
+    protected List<String> sharingHistory;
+
+    public Sharer(String username, AccessType accessType, List<String> sharingHistory) {
         this.username = username;
         this.accessType = accessType;
+        this.sharingHistory = sharingHistory;
     }
 
     public String getUsername() {
@@ -31,6 +36,13 @@ public class Sharer {
         this.accessType = accessType;
     }
 
+    public List<String> getSharingHistory() {
+        return sharingHistory;
+    }
+
+    public void setSharingHistory(List<String> sharingHistory) {
+        this.sharingHistory = sharingHistory;
+    }
 
     @Override
     public int hashCode() {
@@ -38,6 +50,7 @@ public class Sharer {
         return new HashCodeBuilder(17, 31)
                 .append(username)
                 .append(accessType)
+                .append(sharingHistory)
                 .toHashCode();
     }
 
@@ -55,6 +68,7 @@ public class Sharer {
         return new EqualsBuilder()
                 .append(username, rhs.getUsername())
                 .append(accessType, rhs.getAccessType())
+                .append(sharingHistory, rhs.getSharingHistory())
                 .isEquals();
     }
 }

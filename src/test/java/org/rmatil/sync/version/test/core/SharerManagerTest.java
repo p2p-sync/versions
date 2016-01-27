@@ -5,10 +5,12 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
+import org.rmatil.sync.version.api.IObjectManager;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectManager;
 import org.rmatil.sync.version.core.SharerManager;
@@ -21,11 +23,9 @@ import org.rmatil.sync.version.test.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.*;
 
@@ -44,6 +44,9 @@ public class SharerManagerTest {
 
     protected static PathObject pathObject;
 
+    protected static Sharer sharer1;
+    protected static Sharer sharer2;
+
     @BeforeClass
     public static void setUp()
             throws InputOutputException {
@@ -60,8 +63,8 @@ public class SharerManagerTest {
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
         sharerManager = new SharerManager(objectManager);
 
-        Sharer sharer1 = new Sharer("Eleanor Fant", AccessType.READ);
-        Sharer sharer2 = new Sharer("Eric Widget", AccessType.WRITE);
+        sharer1 = new Sharer("Eleanor Fant", AccessType.READ, new ArrayList<>());
+        sharer2 = new Sharer("Eric Widget", AccessType.WRITE, new ArrayList<>());
 
         Set<Sharer> sharers = new HashSet<>();
         sharers.add(sharer1);
@@ -86,17 +89,58 @@ public class SharerManagerTest {
         assertFalse("sharers should not be empty", sharers.isEmpty());
         assertEquals("There should be 2 sharers", 2, sharers.size());
 
-        Sharer s1 = new Sharer("Piff Jenkins", AccessType.READ);
-        sharerManager.addSharer(s1, pathObject.getAbsolutePath());
+        sharerManager.addSharer("Piff Jenkins", AccessType.READ, pathObject.getAbsolutePath());
+
+        List<String> sharingHistory = new ArrayList<>();
+        sharingHistory.add(Hash.hash(org.rmatil.sync.version.config.Config.DEFAULT.getHashingAlgorithm(), AccessType.READ.name()));
+        Sharer expectedSharer = new Sharer("Piff Jenkins", AccessType.READ, sharingHistory);
 
         Set<Sharer> sharers1 = sharerManager.getSharer(pathObject.getAbsolutePath());
         assertEquals("sharer do not contain s1", 3, sharers1.size());
-        assertThat("sharers should contain the new sharer", sharers1, hasItem(s1));
 
-        sharerManager.removeSharer(s1, pathObject.getAbsolutePath());
+        Iterator<Sharer> itr = sharers1.iterator();
+        Sharer actualSharer = null;
+        while (itr.hasNext()) {
+            actualSharer = itr.next();
+        }
 
+        assertTrue("last sharer should be equal", expectedSharer.equals(actualSharer));
+
+        IObjectManager objectManager = sharerManager.getObjectManager();
+        PathObject fetchedObject = objectManager.getObjectForPath(pathObject.getAbsolutePath());
+
+        assertTrue("File should be shared", fetchedObject.isShared());
         Set<Sharer> sharers2 = sharerManager.getSharer(pathObject.getAbsolutePath());
-        assertEquals("versions should contain 2 element again after removing", 2, sharers2.size());
+        assertEquals("Sharers2 should only contain three sharer", 3, sharers2.size());
+
+        Iterator<Sharer> itr2 = sharerManager.getSharer(pathObject.getAbsolutePath()).iterator();
+        Sharer actualSharer2 = null;
+        while (itr2.hasNext()) {
+            actualSharer2 = itr2.next();
+        }
+
+        assertEquals("Sharing history should contain only one value", 1, actualSharer2.getSharingHistory().size());
+
+        // this sets the shared flag to false, if s1 is the last sharer of the file
+        // and adds to the sharer's history one entry more and sets the access type to ACCESS_REMOVED
+        sharerManager.removeSharer(expectedSharer.getUsername(), pathObject.getAbsolutePath());
+
+        PathObject updatePathObject = sharerManager.getObjectManager().getObjectForPath(pathObject.getAbsolutePath());
+
+        Iterator<Sharer> itr3 = updatePathObject.getSharers().iterator();
+        Sharer actualSharer3 = null;
+        while (itr3.hasNext()) {
+            actualSharer3 = itr3.next();
+        }
+
+        assertTrue("File should still be shared", updatePathObject.isShared());
+        assertEquals("Sharer should be still present", 3, updatePathObject.getSharers().size());
+        assertEquals("Sharer's access type should be removed", AccessType.ACCESS_REMOVED, actualSharer3.getAccessType());
+
+        sharerManager.removeSharer(sharer2.getUsername(), pathObject.getAbsolutePath());
+        sharerManager.removeSharer(sharer1.getUsername(), pathObject.getAbsolutePath());
+
+        assertTrue("File should not be shared anymore", sharerManager.getObjectManager().getObjectForPath(pathObject.getAbsolutePath()).isShared());
     }
 
     @Test

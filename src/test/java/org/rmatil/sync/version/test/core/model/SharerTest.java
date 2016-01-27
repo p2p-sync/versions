@@ -5,17 +5,21 @@ import org.junit.Test;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.core.model.Sharer;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.*;
 
 public class SharerTest {
 
     protected static Sharer sharer;
+    protected static Sharer sharer2;
 
     protected static final String USERNAME = "Pelican Steve";
 
     @BeforeClass
     public static void setUp() {
-        sharer = new Sharer(USERNAME, AccessType.WRITE);
+        sharer = new Sharer(USERNAME, AccessType.WRITE, new ArrayList<>());
+        sharer2 = new Sharer(USERNAME, AccessType.WRITE, new ArrayList<>());
     }
 
     @Test
@@ -27,5 +31,11 @@ public class SharerTest {
         sharer.setAccessType(AccessType.READ);
         assertEquals("AccessType not equal after changing", AccessType.READ, sharer.getAccessType());
 
+        assertArrayEquals("Sharing history should be empty", new ArrayList<String>().toArray(), sharer.getSharingHistory().toArray());
+    }
+
+    @Test
+    public void testEquals() {
+        assertTrue("Sharer should be equals", sharer.equals(sharer2));
     }
 }
