@@ -12,6 +12,7 @@ import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectManager;
+import org.rmatil.sync.version.core.SharerManager;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
@@ -26,6 +27,8 @@ import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.*;
 
 public class ObjectManagerTest {
@@ -239,5 +242,50 @@ public class ObjectManagerTest {
 
         thrown.expect(InputOutputException.class);
         objectManager.getObject(anotherObjectHash);
+    }
+
+    @Test
+    public void testGetObjectForFileId()
+            throws InputOutputException {
+        PathObject sharedPathObject = new PathObject(
+                pathObject.getName(),
+                null,
+                pathObject.getPath(),
+                pathObject.getPathType(),
+                false,
+                false,
+                new HashSet<>(),
+                new ArrayList<>()
+        );
+
+        objectManager.writeObject(sharedPathObject);
+
+        assertEquals("One path should exist", 1, objectManager.getIndex().getPaths().size());
+        assertEquals("No shared path should exist yet", 0, objectManager.getIndex().getSharedPaths().entrySet().size());
+
+        SharerManager sharerManager = new SharerManager(objectManager);
+
+        UUID fileId = UUID.randomUUID();
+
+        PathObject fetchedObject = objectManager.getObjectForPath(sharedPathObject.getAbsolutePath());
+
+        assertNotNull("Fetched path object should not be null", fetchedObject);
+
+        // start to "share" the file
+        fetchedObject.setFileId(fileId);
+        objectManager.writeObject(fetchedObject);
+
+        // this also inserts the path to the file id
+        sharerManager.addSharer(
+                "Manuel Internetiquette",
+                AccessType.WRITE,
+                sharedPathObject.getAbsolutePath()
+        );
+
+        PathObject objectForFileId = objectManager.getObjectForFileId(fileId);
+
+        assertNotNull("ObjectForFileId should not be null", objectForFileId);
+        assertEquals("FileId should be equal", fileId, objectForFileId.getFileId());
+        assertTrue("File should be shared", objectForFileId.isShared());
     }
 }

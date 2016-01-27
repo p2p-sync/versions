@@ -7,6 +7,7 @@ import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface IObjectManager {
 
@@ -50,6 +51,19 @@ public interface IObjectManager {
      * @throws InputOutputException If reading the object store fails
      */
     PathObject getObjectForPath(String relativeFilePath)
+            throws InputOutputException;
+
+    /**
+     * Returns the path object for the given fileId.
+     * <i>Note</i>: A file only has a file id if it was shared.
+     *
+     * @param fileId The fileId for which to get the path object
+     *
+     * @return The found path object
+     *
+     * @throws InputOutputException If no object exists
+     */
+    PathObject getObjectForFileId(UUID fileId)
             throws InputOutputException;
 
     /**

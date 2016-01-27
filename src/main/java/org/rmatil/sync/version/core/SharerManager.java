@@ -12,6 +12,7 @@ import org.rmatil.sync.version.core.model.Sharer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public class SharerManager implements ISharerManager {
 
@@ -46,6 +47,7 @@ public class SharerManager implements ISharerManager {
         );
 
         PathObject pathObject = this.objectManager.getObject(fileNameHash);
+        pathObject.setIsShared(true);
         pathObject.getSharers().add(sharer);
         this.objectManager.writeObject(pathObject);
     }

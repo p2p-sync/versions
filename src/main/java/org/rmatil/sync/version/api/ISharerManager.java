@@ -1,9 +1,13 @@
 package org.rmatil.sync.version.api;
 
+import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
+import org.rmatil.sync.version.config.Config;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**

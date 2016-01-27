@@ -8,8 +8,8 @@ import org.rmatil.sync.persistence.core.local.LocalPathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.IObjectManager;
 import org.rmatil.sync.version.config.Config;
-import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Index;
+import org.rmatil.sync.version.core.model.PathObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +114,18 @@ public class ObjectManager implements IObjectManager {
     public synchronized PathObject getObjectForPath(String relativeFilePath)
             throws InputOutputException {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativeFilePath);
+
+        return this.getObject(fileNameHash);
+    }
+
+    @Override
+    public synchronized PathObject getObjectForFileId(UUID fileId)
+            throws InputOutputException {
+        String fileNameHash = this.getIndex().getSharedPaths().get(fileId);
+
+        if (null == fileNameHash) {
+            throw new InputOutputException("No path object registered for shared file with id " + fileId);
+        }
 
         return this.getObject(fileNameHash);
     }
