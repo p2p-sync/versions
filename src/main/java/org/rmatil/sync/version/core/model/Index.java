@@ -4,20 +4,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.util.Map;
-import java.util.UUID;
 
 public class Index {
 
-    protected static Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();;
-
+    protected static Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+    
     protected Map<String, String> paths;
 
-    protected Map<UUID, String> sharedPaths;
-
-    public Index(Map<String, String> paths, Map<UUID, String> sharedPaths) {
+    public Index(Map<String, String> paths) {
         this.paths = paths;
-        this.sharedPaths = sharedPaths;
-
     }
 
     public void addPath(String pathToFile, String hashOfFilePath) {
@@ -30,18 +25,6 @@ public class Index {
 
     public Map<String, String> getPaths() {
         return this.paths;
-    }
-
-    public void addSharedPath(UUID sharedFileId, String hashOfFilePath) {
-        this.sharedPaths.put(sharedFileId, hashOfFilePath);
-    }
-
-    public void removeSharedPath(UUID sharedFileId) {
-        this.sharedPaths.remove(sharedFileId);
-    }
-
-    public Map<UUID, String> getSharedPaths() {
-        return sharedPaths;
     }
 
     public String toJson() {

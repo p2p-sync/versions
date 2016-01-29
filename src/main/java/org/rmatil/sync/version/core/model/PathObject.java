@@ -4,7 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.rmatil.sync.version.api.PathType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class PathObject {
 
@@ -14,11 +17,6 @@ public class PathObject {
      * The name of the directory or file (without a path)
      */
     protected String name;
-
-    /**
-     * The globally unique file id
-     */
-    protected UUID fileId;
 
     /**
      * The path to the file or directory without the filename
@@ -52,7 +50,6 @@ public class PathObject {
 
     /**
      * @param name      The name of the file or directory (without the path to it)
-     * @param fileId    The globally unique file id
      * @param path      The path to the file or directory (without the name of it)
      * @param pathType  The type of the file
      * @param isShared  Whether this file is shared
@@ -60,9 +57,8 @@ public class PathObject {
      * @param sharers   A list of sharers
      * @param versions  A list of versions
      */
-    public PathObject(String name, UUID fileId, String path, PathType pathType, boolean isShared, boolean isDeleted, Set<Sharer> sharers, List<Version> versions) {
+    public PathObject(String name, String path, PathType pathType, boolean isShared, boolean isDeleted, Set<Sharer> sharers, List<Version> versions) {
         this.name = name;
-        this.fileId = fileId;
         this.path = path;
         this.pathType = pathType;
         this.isShared = isShared;
@@ -85,24 +81,6 @@ public class PathObject {
      */
     public String getName() {
         return name;
-    }
-
-    /**
-     * Sets the globally unique file id
-     *
-     * @param fileId The globally unique file id
-     */
-    public void setFileId(UUID fileId) {
-        this.fileId = fileId;
-    }
-
-    /**
-     * Returns the globally unique identifier for this file
-     *
-     * @return The globally unique identifier
-     */
-    public UUID getFileId() {
-        return fileId;
     }
 
     /**

@@ -73,9 +73,7 @@ public class ObjectManagerTest {
         versions.add(v1);
         versions.add(v2);
 
-        UUID fileId = UUID.randomUUID();
-
-        pathObject = new PathObject("myFile.txt", fileId, "somePath/to/dir", PathType.FILE, true, false, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, false, sharers, versions);
     }
 
     @AfterClass
@@ -94,8 +92,7 @@ public class ObjectManagerTest {
             throws IOException, InputOutputException {
         // test constructor
         String expectedJson = "{\n" +
-                "  \"paths\": {},\n" +
-                "  \"sharedPaths\": {}\n" +
+                "  \"paths\": {}\n" +
                 "}";
 
         byte[] content = Files.readAllBytes(ROOT_TEST_DIR.resolve(objectManager.getIndexFileName()));
@@ -196,7 +193,7 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", null, "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
         List<PathObject> children = objectManager.getChildren("somePath/to/dir");
@@ -214,10 +211,10 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", null, "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
-        PathObject anotherObject = new PathObject("anotherFile.txt", null, "somePath/to/dir", PathType.FILE, false, false, new HashSet<>(), new ArrayList<>());
+        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, false, false, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(anotherObject);
 
         Index origIndex = objectManager.getIndex();
@@ -245,11 +242,10 @@ public class ObjectManagerTest {
     }
 
     @Test
-    public void testGetObjectForFileId()
+    public void testShareObject()
             throws InputOutputException {
         PathObject sharedPathObject = new PathObject(
                 pathObject.getName(),
-                null,
                 pathObject.getPath(),
                 pathObject.getPathType(),
                 false,
@@ -261,31 +257,26 @@ public class ObjectManagerTest {
         objectManager.writeObject(sharedPathObject);
 
         assertEquals("One path should exist", 1, objectManager.getIndex().getPaths().size());
-        assertEquals("No shared path should exist yet", 0, objectManager.getIndex().getSharedPaths().entrySet().size());
 
         SharerManager sharerManager = new SharerManager(objectManager);
-
-        UUID fileId = UUID.randomUUID();
 
         PathObject fetchedObject = objectManager.getObjectForPath(sharedPathObject.getAbsolutePath());
 
         assertNotNull("Fetched path object should not be null", fetchedObject);
 
         // start to "share" the file
-        fetchedObject.setFileId(fileId);
-        objectManager.writeObject(fetchedObject);
-
-        // this also inserts the path to the file id
         sharerManager.addSharer(
                 "Manuel Internetiquette",
                 AccessType.WRITE,
                 sharedPathObject.getAbsolutePath()
         );
 
-        PathObject objectForFileId = objectManager.getObjectForFileId(fileId);
+        PathObject objectForFileId = objectManager.getObjectForPath(sharedPathObject.getAbsolutePath());
 
         assertNotNull("ObjectForFileId should not be null", objectForFileId);
-        assertEquals("FileId should be equal", fileId, objectForFileId.getFileId());
         assertTrue("File should be shared", objectForFileId.isShared());
+        assertEquals("There should be one sharer", 1, objectForFileId.getSharers().size());
+        assertEquals("SharerName should be equal", "Manuel Internetiquette", objectForFileId.getSharers().iterator().next().getUsername());
+        assertEquals("AccessType should be equal", AccessType.WRITE, objectForFileId.getSharers().iterator().next().getAccessType());
     }
 }

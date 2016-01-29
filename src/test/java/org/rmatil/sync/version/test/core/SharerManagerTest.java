@@ -25,8 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.*;
 
 public class SharerManagerTest {
@@ -72,7 +70,7 @@ public class SharerManagerTest {
 
         List<Version> versions = new ArrayList<>();
 
-        pathObject = new PathObject("myFile.txt", null, "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
 
         objectManager.writeObject(pathObject);
     }

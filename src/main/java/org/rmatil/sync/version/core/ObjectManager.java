@@ -14,7 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ObjectManager implements IObjectManager {
 
@@ -48,7 +51,7 @@ public class ObjectManager implements IObjectManager {
             logger.error(e.getMessage());
             logger.info("Creating the index file at " + this.indexFileName);
 
-            this.index = new Index(new HashMap<>(), new HashMap<>());
+            this.index = new Index(new HashMap<>());
             this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
         }
     }
@@ -67,7 +70,7 @@ public class ObjectManager implements IObjectManager {
         }
 
         // recreate empty index
-        this.index = new Index(new HashMap<>(), new HashMap<>());
+        this.index = new Index(new HashMap<>());
 
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
     }
@@ -78,10 +81,6 @@ public class ObjectManager implements IObjectManager {
         logger.trace("Writing path object for file " + path.getAbsolutePath());
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), path.getAbsolutePath());
         this.index.addPath(path.getAbsolutePath(), fileNameHash);
-
-        if (null != path.getFileId()) {
-            this.index.addSharedPath(path.getFileId(), fileNameHash);
-        }
 
         logger.trace("Calculated hash for file name: " + fileNameHash);
 
@@ -119,18 +118,6 @@ public class ObjectManager implements IObjectManager {
     }
 
     @Override
-    public synchronized PathObject getObjectForFileId(UUID fileId)
-            throws InputOutputException {
-        String fileNameHash = this.getIndex().getSharedPaths().get(fileId);
-
-        if (null == fileNameHash) {
-            throw new InputOutputException("No path object registered for shared file with id " + fileId);
-        }
-
-        return this.getObject(fileNameHash);
-    }
-
-    @Override
     public synchronized String getHashForPath(String relativeFilePath) {
         return Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativeFilePath);
     }
@@ -153,11 +140,6 @@ public class ObjectManager implements IObjectManager {
 
         logger.trace("Removing file from index...");
         this.index.removePath(pathObjectToDelete.getAbsolutePath());
-
-        // remove also the shared file
-        if (null != pathObjectToDelete.getFileId()) {
-            this.index.removeSharedPath(pathObjectToDelete.getFileId());
-        }
 
         this.storageAdapter.persist(StorageType.FILE, indexPath, this.index.toJson().getBytes());
         logger.trace("Rewriting index after removing of file " + pathObjectToDelete.getAbsolutePath());

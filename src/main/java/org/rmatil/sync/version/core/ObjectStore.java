@@ -185,7 +185,6 @@ public class ObjectStore implements IObjectStore {
 
         PathObject pathObject = new PathObject(
                 relativePathToWatchedDir.getFileName().toString(),
-                null, // is filled in by the object manager
                 pathToFileWithoutFilename,
                 pathType,
                 false,
@@ -214,7 +213,6 @@ public class ObjectStore implements IObjectStore {
         PathObject object = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePath));
         PathObject deletedObject = new PathObject(
                 object.getName(),
-                object.getFileId(),
                 Naming.getPathWithoutFileName(object.getName(), relativePath),
                 object.getPathType(),
                 object.isShared(),
@@ -234,7 +232,6 @@ public class ObjectStore implements IObjectStore {
         PathObject oldObject = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), oldRelativePath));
         PathObject newObject = new PathObject(
                 oldObject.getName(),
-                oldObject.getFileId(),
                 Naming.getPathWithoutFileName(oldObject.getName(), newRelativePath),
                 oldObject.getPathType(),
                 oldObject.isShared(),

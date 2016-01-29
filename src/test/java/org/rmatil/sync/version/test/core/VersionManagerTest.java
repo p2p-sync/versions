@@ -69,7 +69,7 @@ public class VersionManagerTest {
 
         List<Version> versions = new ArrayList<>();
 
-        pathObject = new PathObject("myFile.txt", null, "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
 
         objectManager.writeObject(pathObject);
     }
