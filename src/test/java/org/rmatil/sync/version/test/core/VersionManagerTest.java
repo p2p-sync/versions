@@ -60,6 +60,8 @@ public class VersionManagerTest {
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
         versionManager = new VersionManager(objectManager);
 
+        String owner = "Mister Pepper";
+
         Sharer sharer1 = new Sharer("Weir Doe", AccessType.READ, new ArrayList<>());
         Sharer sharer2 = new Sharer("Niles Peppertrout", AccessType.WRITE, new ArrayList<>());
 
@@ -69,7 +71,7 @@ public class VersionManagerTest {
 
         List<Version> versions = new ArrayList<>();
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, true, owner, sharers, versions);
 
         objectManager.writeObject(pathObject);
     }

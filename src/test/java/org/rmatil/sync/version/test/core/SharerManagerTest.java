@@ -45,6 +45,8 @@ public class SharerManagerTest {
     protected static Sharer sharer1;
     protected static Sharer sharer2;
 
+    protected static String owner;
+
     @BeforeClass
     public static void setUp()
             throws InputOutputException {
@@ -61,6 +63,8 @@ public class SharerManagerTest {
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
         sharerManager = new SharerManager(objectManager);
 
+        owner = "Monsieur F";
+
         sharer1 = new Sharer("Eleanor Fant", AccessType.READ, new ArrayList<>());
         sharer2 = new Sharer("Eric Widget", AccessType.WRITE, new ArrayList<>());
 
@@ -70,7 +74,7 @@ public class SharerManagerTest {
 
         List<Version> versions = new ArrayList<>();
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, true, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, true, owner, sharers, versions);
 
         objectManager.writeObject(pathObject);
     }

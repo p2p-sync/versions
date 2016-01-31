@@ -21,14 +21,14 @@ import org.rmatil.sync.version.test.config.Config;
 import org.rmatil.sync.version.test.util.FileUtil;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.*;
 
 public class ObjectManagerTest {
@@ -59,6 +59,8 @@ public class ObjectManagerTest {
         storageAdapter = new LocalStorageAdapter(ROOT_TEST_DIR);
         objectManager = new ObjectManager("index.json", "objects", storageAdapter);
 
+        String owner = "Valentino Morose";
+
         Sharer sharer1 = new Sharer("Natalya Undergrowth", AccessType.READ, new ArrayList<>());
         Sharer sharer2 = new Sharer("Archibald Northbottom", AccessType.WRITE, new ArrayList<>());
 
@@ -73,7 +75,7 @@ public class ObjectManagerTest {
         versions.add(v1);
         versions.add(v2);
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, false, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, false, owner, sharers, versions);
     }
 
     @AfterClass
@@ -193,7 +195,7 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
         List<PathObject> children = objectManager.getChildren("somePath/to/dir");
@@ -211,10 +213,10 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
-        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, false, false, new HashSet<>(), new ArrayList<>());
+        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, false, false, null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(anotherObject);
 
         Index origIndex = objectManager.getIndex();
@@ -250,6 +252,7 @@ public class ObjectManagerTest {
                 pathObject.getPathType(),
                 false,
                 false,
+                null,
                 new HashSet<>(),
                 new ArrayList<>()
         );
@@ -265,6 +268,8 @@ public class ObjectManagerTest {
         assertNotNull("Fetched path object should not be null", fetchedObject);
 
         // start to "share" the file
+        sharerManager.addOwner("Valentino Morose", sharedPathObject.getAbsolutePath());
+
         sharerManager.addSharer(
                 "Manuel Internetiquette",
                 AccessType.WRITE,
@@ -278,5 +283,6 @@ public class ObjectManagerTest {
         assertEquals("There should be one sharer", 1, objectForFileId.getSharers().size());
         assertEquals("SharerName should be equal", "Manuel Internetiquette", objectForFileId.getSharers().iterator().next().getUsername());
         assertEquals("AccessType should be equal", AccessType.WRITE, objectForFileId.getSharers().iterator().next().getAccessType());
+        assertEquals("Owner should be equal", "Valentino Morose", objectForFileId.getOwner());
     }
 }

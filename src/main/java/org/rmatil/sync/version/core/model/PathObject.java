@@ -39,6 +39,12 @@ public class PathObject {
     protected boolean isDeleted;
 
     /**
+     * The username of the file owner in case the
+     * file is shared.
+     */
+    protected String owner;
+
+    /**
      * A list of sharers of this file
      */
     protected Set<Sharer> sharers;
@@ -54,15 +60,17 @@ public class PathObject {
      * @param pathType  The type of the file
      * @param isShared  Whether this file is shared
      * @param isDeleted Whether the path on disk is deleted
+     * @param owner     The owner's username in case the file is shared
      * @param sharers   A list of sharers
      * @param versions  A list of versions
      */
-    public PathObject(String name, String path, PathType pathType, boolean isShared, boolean isDeleted, Set<Sharer> sharers, List<Version> versions) {
+    public PathObject(String name, String path, PathType pathType, boolean isShared, boolean isDeleted, String owner, Set<Sharer> sharers, List<Version> versions) {
         this.name = name;
         this.path = path;
         this.pathType = pathType;
         this.isShared = isShared;
         this.isDeleted = isDeleted;
+        this.owner = owner;
         this.sharers = sharers;
         if (null == this.sharers) {
             this.sharers = new HashSet<>();
@@ -140,6 +148,25 @@ public class PathObject {
      */
     public boolean isDeleted() {
         return isDeleted;
+    }
+
+    /**
+     * Returns the owner of this file
+     * in case it is shared. May be null otherwise.
+     *
+     * @return The owner's username or null, if the file is not shared
+     */
+    public String getOwner() {
+        return owner;
+    }
+
+    /**
+     * Sets the owner's username
+     *
+     * @param owner The owner's username
+     */
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 
     /**

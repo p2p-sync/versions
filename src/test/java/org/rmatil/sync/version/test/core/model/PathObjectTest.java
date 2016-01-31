@@ -11,6 +11,7 @@ public class PathObjectTest {
 
     protected static final String  NAME       = "myFile.txt";
     protected static final String  PATH       = "";
+    protected static final String  OWNER      = "Owner's Username";
     protected static final boolean IS_SHARED  = false;
     protected static final boolean IS_DELETED = false;
 
@@ -18,7 +19,7 @@ public class PathObjectTest {
 
     @BeforeClass
     public static void setUp() {
-        pathObject = new PathObject(NAME, PATH, PathType.DIRECTORY, IS_SHARED, IS_DELETED, null, null);
+        pathObject = new PathObject(NAME, PATH, PathType.DIRECTORY, IS_SHARED, IS_DELETED, OWNER, null, null);
     }
 
     @Test

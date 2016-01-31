@@ -75,11 +75,12 @@ public class SharerManager implements ISharerManager {
         // if the sharer is the last sharer for the file, we can remove the shared flag
         if (isLastSharerForPath) {
             pathObject.setIsShared(false);
+            pathObject.setOwner(null);
         }
 
         String nextSharingHistoryEntry = "";
         // make a hash of all previously history entries
-        for (String shareHistory :  sharer.getSharingHistory()) {
+        for (String shareHistory : sharer.getSharingHistory()) {
             nextSharingHistoryEntry = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), nextSharingHistoryEntry + shareHistory);
         }
 
@@ -90,6 +91,29 @@ public class SharerManager implements ISharerManager {
 
         pathObject.getSharers().add(sharer);
         this.objectManager.writeObject(pathObject);
+    }
+
+    @Override
+    public void addOwner(String username, String pathToFile)
+            throws InputOutputException {
+        String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
+
+        PathObject pathObject = this.objectManager.getObject(fileNameHash);
+        pathObject.setOwner(username);
+        this.objectManager.writeObject(pathObject);
+    }
+
+    @Override
+    public void removeOwner(String username, String pathToFile)
+            throws InputOutputException {
+        String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
+
+        PathObject pathObject = this.objectManager.getObject(fileNameHash);
+
+        if (pathObject.getOwner().equals(username)) {
+            pathObject.setOwner(null);
+            this.objectManager.writeObject(pathObject);
+        }
     }
 
     @Override

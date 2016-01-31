@@ -189,6 +189,7 @@ public class ObjectStore implements IObjectStore {
                 pathType,
                 false,
                 false,
+                null,
                 new HashSet<>(),
                 versions
         );
@@ -217,6 +218,7 @@ public class ObjectStore implements IObjectStore {
                 object.getPathType(),
                 object.isShared(),
                 true,
+                null,
                 new HashSet<>(),
                 object.getVersions()
         );
@@ -236,6 +238,7 @@ public class ObjectStore implements IObjectStore {
                 oldObject.getPathType(),
                 oldObject.isShared(),
                 oldObject.isDeleted(),
+                oldObject.getOwner(),
                 oldObject.getSharers(),
                 oldObject.getVersions()
         );

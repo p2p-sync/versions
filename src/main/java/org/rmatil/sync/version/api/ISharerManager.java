@@ -1,13 +1,9 @@
 package org.rmatil.sync.version.api;
 
-import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
-import org.rmatil.sync.version.config.Config;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -48,6 +44,28 @@ public interface ISharerManager {
      * @throws InputOutputException If removing the sharer failed
      */
     void removeSharer(String username, String pathToFile)
+            throws InputOutputException;
+
+    /**
+     * Adds the owner to the file on the specified path
+     *
+     * @param username   The owner's user name to add
+     * @param pathToFile The file path to which to add the owner
+     *
+     * @throws InputOutputException If adding the owner fails
+     */
+    void addOwner(String username, String pathToFile)
+            throws InputOutputException;
+
+    /**
+     * Removes the owner of the file specified
+     *
+     * @param username   The owner's username to remove
+     * @param pathToFile The path to the file from which to remove the given owner
+     *
+     * @throws InputOutputException If removing the owner fails
+     */
+    void removeOwner(String username, String pathToFile)
             throws InputOutputException;
 
     /**
