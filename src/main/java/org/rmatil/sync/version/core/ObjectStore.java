@@ -314,10 +314,50 @@ public class ObjectStore implements IObjectStore {
                 }
 
                 // merge sharers
-                Set<Sharer> sharers = this.getObjectManager().getObject(hashToFile).getSharers();
+                PathObject ourObject = this.getObjectManager().getObject(hashToFile);
+                Set<Sharer> sharers = ourObject.getSharers();
                 Set<Sharer> otherSharers = otherPathObject.getSharers();
 
-                sharers.addAll(otherSharers);
+                for (Sharer ownSharer :  sharers) {
+                    for (Sharer otherSharer : otherSharers) {
+                        if (ownSharer.getUsername().equals(otherSharer.getUsername())) {
+                            // compare history
+                            if (ownSharer.getSharingHistory().size() < otherSharer.getSharingHistory().size()) {
+                                // we replace the other sharing history with our one
+                                ownSharer.setSharingHistory(otherSharer.getSharingHistory());
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                // now add all sharers we do not have
+                for (Sharer otherSharer : otherSharers) {
+                    boolean hasOtherSharer = false;
+                    for (Sharer ourSharer : sharers) {
+                        if (otherSharer.getUsername().equals(ourSharer.getUsername())) {
+                            hasOtherSharer = true;
+                            break;
+                        }
+                    }
+
+                    // add other sharer if he does not exist yet
+                    if (! hasOtherSharer) {
+                        sharers.add(otherSharer);
+                    }
+                }
+
+                ourObject.setSharers(sharers);
+
+                // merge owner
+                if (null == ourObject.getOwner() && null != otherPathObject.getOwner()) {
+                    // check if the other client has an owner
+                    ourObject.setOwner(otherPathObject.getOwner());
+                }
+
+                // update changes
+                this.getObjectManager().writeObject(ourObject);
 
             } else {
                 // we do not have the file yet, so check whether it should be deleted (flag)

@@ -7,10 +7,12 @@ import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
+import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectStore;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
+import org.rmatil.sync.version.core.model.Sharer;
 import org.rmatil.sync.version.core.model.Version;
 import org.rmatil.sync.version.test.config.Config;
 import org.rmatil.sync.version.test.util.APathTest;
@@ -20,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -296,12 +300,14 @@ public class ObjectStoreTest {
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/myInnerFile.txt"));
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/nyOtherInnerFile.txt"));
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/myFutureDeletedFile.txt"));
+        Files.createFile(ROOT_TEST_DIR.resolve("someFileForMergingOfSharersAndOwners.txt"));
 
         objectStore1.onCreateFile("myFile1.txt", "someHashOfFile1");
         objectStore1.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
         objectStore1.onCreateFile("myDir2", "someDirHash");
         objectStore1.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash");
         objectStore1.onRemoveFile("myDir2/myFutureDeletedFile.txt");
+        objectStore1.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
 
         objectStore2.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
         objectStore2.onRemoveFile("myFile2WhichIsDeletedOnTheOtherClient.txt");
@@ -310,6 +316,44 @@ public class ObjectStoreTest {
         objectStore2.onCreateFile("myDir2/myInnerFile.txt", "hashOfInnerFile");
         objectStore2.onCreateFile("myDir2/myOtherInnerFile.txt", "hashOfInnerFile2");
         objectStore1.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash"); // we remove this file if he has it but we don't
+        objectStore2.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
+
+        // now write different sharers and an empty owner
+        List<String> sharingHistory11 = new ArrayList<>();
+        sharingHistory11.add("hash1");
+
+        Sharer sharer11 = new Sharer(
+                "sharer1",
+                AccessType.WRITE,
+                sharingHistory11
+        );
+
+        PathObject o1 = objectStore1.getObjectManager().getObjectForPath("someFileForMergingOfSharersAndOwners.txt");
+        o1.getSharers().add(sharer11);
+        objectStore1.getObjectManager().writeObject(o1);
+
+        List<String> sharingHistory21 = new ArrayList<>();
+        sharingHistory21.add("hash1");
+        sharingHistory21.add("hash2");
+        Sharer sharer21 = new Sharer(
+                "sharer1",
+                AccessType.WRITE,
+                sharingHistory21
+        );
+
+        List<String> sharingHistory22 = new ArrayList<>();
+        sharingHistory22.add("hash1");
+        Sharer sharer22 = new Sharer(
+                "sharer2",
+                AccessType.WRITE,
+                sharingHistory22
+        );
+
+        PathObject o2 = objectStore2.getObjectManager().getObjectForPath("someFileForMergingOfSharersAndOwners.txt");
+        o2.getSharers().add(sharer21);
+        o2.getSharers().add(sharer22);
+        o2.setOwner("someOwner");
+        objectStore2.getObjectManager().writeObject(o2);
 
         HashMap<ObjectStore.MergedObjectType, Set<String>> outdatedOrMissingPaths = objectStore1.mergeObjectStore(objectStore2);
         Set<String> outDatedPaths = outdatedOrMissingPaths.get(ObjectStore.MergedObjectType.CHANGED);
@@ -323,6 +367,12 @@ public class ObjectStoreTest {
         assertThat("List should contain entry for myDir2", outDatedPaths, hasItem("myDir2"));
         assertThat("List should contain entry for myDir2/myInnerFile.txt", outDatedPaths, hasItem("myDir2/myInnerFile.txt"));
         assertThat("List should contain entry for myDir2/myOtherInnerFile.txt", outDatedPaths, hasItem("myDir2/myOtherInnerFile.txt"));
+
+
+        PathObject o3 = objectStore1.getObjectManager().getObjectForPath("someFileForMergingOfSharersAndOwners.txt");
+        assertEquals("There should now exist two sharers", 2, o3.getSharers().size());
+        assertEquals("Sharing history of sharer1 should contain 2 entries", 2, o3.getSharers().iterator().next().getSharingHistory().size());
+        assertEquals("Owner should be set now", "someOwner", o3.getOwner());
 
         objectStore1.getObjectManager().clear();
         objectStore2.getObjectManager().clear();

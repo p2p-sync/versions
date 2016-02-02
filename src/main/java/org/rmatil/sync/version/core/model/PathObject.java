@@ -208,6 +208,15 @@ public class PathObject {
     }
 
     /**
+     * Sets sharers of this path object
+     *
+     * @param sharers The sharers of this object
+     */
+    public void setSharers(Set<Sharer> sharers) {
+        this.sharers = sharers;
+    }
+
+    /**
      * Returns a list of versions of this file
      *
      * @return THe list of sharers

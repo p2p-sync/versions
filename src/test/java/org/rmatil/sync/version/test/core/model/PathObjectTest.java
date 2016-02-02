@@ -5,6 +5,11 @@ import org.junit.Test;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.model.PathObject;
+import org.rmatil.sync.version.core.model.Sharer;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -32,6 +37,14 @@ public class PathObjectTest {
         pathObject.setIsShared(true);
         assertTrue("PathObject should be shared after sharing", pathObject.isShared());
         assertEquals("Sharers are not empty", 0, pathObject.getSharers().size());
+
+        Sharer s1 = new Sharer("a", AccessType.WRITE, new ArrayList<>());
+        Set<Sharer> sharer = new HashSet<>();
+        sharer.add(s1);
+        pathObject.setSharers(sharer);
+
+        assertEquals("Sharers are not equal", sharer, pathObject.getSharers());
+
         assertEquals("Versions are not empty", 0, pathObject.getVersions().size());
 
         assertEquals("Access type should be equal", ACCESS_TYPE, pathObject.getAccessType());
