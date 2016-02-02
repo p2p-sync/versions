@@ -22,10 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -286,6 +283,38 @@ public class ObjectStoreTest {
 
         assertEquals("Version size should be one", 1, fileObjectAfterSync.getVersions().size());
         assertNotEquals("File hash should be different", fileObject.getVersions().get(fileObject.getVersions().size() - 1).getHash(), fileObjectAfterSync.getVersions().get(fileObjectAfterSync.getVersions().size() - 1).getHash());
+
+        // add an owner, a sharer to a file and change its hash and resync
+        PathObject o1 = objectStore1.getObjectManager().getObjectForPath(key1);
+        o1.setOwner("someOwner");
+        Set<Sharer> sharers = new HashSet<>();
+        sharers.add(new Sharer(
+                "sharer",
+                AccessType.WRITE,
+                new ArrayList<>()
+        ));
+        o1.setSharers(sharers);
+        o1.setAccessType(AccessType.READ);
+        o1.setIsShared(true);
+
+        objectStore1.getObjectManager().writeObject(o1);
+
+        // now delete one file and resync
+        Files.delete(testDir.resolve("myOtherFile.txt"));
+
+        objectStore1.sync(ROOT_TEST_DIR.toFile());
+
+        // check that owner, sharer, access type and isShared is still present
+        PathObject pathObject1 = objectStore1.getObjectManager().getObjectForPath(key1);
+        assertEquals("Owner should still be equal after change", "someOwner", pathObject1.getOwner());
+        assertEquals("Sharer should still be contained", 1, pathObject1.getSharers().size());
+        assertEquals("AccessType should still be read", AccessType.READ, pathObject1.getAccessType());
+        assertTrue("File should still be shared", pathObject1.isShared());
+
+        // check that delete file is still there
+        assertNotNull("Deleted file should still exist in index", objectStore1.getObjectManager().getIndex().getPaths().get(key2));
+        assertTrue("File should be flagged as deleted", objectStore1.getObjectManager().getObjectForPath(key2).isDeleted());
+
 
         objectStore1.getObjectManager().clear();
     }

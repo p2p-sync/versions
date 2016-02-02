@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -75,9 +76,15 @@ public class ObjectStore implements IObjectStore {
             throw new InputOutputException("Can not sync index. Root of synchronized folder does not exist.");
         }
 
-        // clear object store
-        this.objectManager.clear();
+        // first remove all object which are not present anymore on the storage
+        for (Map.Entry<String, String> entry : this.objectManager.getIndex().getPaths().entrySet()) {
+            // flag the file as deleted
+            if (! Files.exists(this.rootDir.resolve(entry.getKey()))) {
+                this.onRemoveFile(entry.getKey());
+            }
+        }
 
+        // now insert or update the files on storage
         File[] files = rootSyncDir.listFiles();
         if (null == files) {
             logger.info("Abort sync of object store, no files in given directory");
@@ -116,23 +123,26 @@ public class ObjectStore implements IObjectStore {
             throws InputOutputException {
         Path relativePathToRootDir = this.rootDir.relativize(file.toPath());
 
+        // recalculate the hash of the file
+        String hash = null;
+        try {
+            if (file.isFile() || file.isDirectory()) {
+                hash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), file);
+            }
+        } catch (IOException e1) {
+            logger.error("Could not create path object for file " + relativePathToRootDir.toString() + ". Message: " + e1.getMessage());
+        }
+
         try {
             // throws an exception if path does not exist
             PathObject oldObject = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePathToRootDir.toString()));
+
+            // just update the content hash
+            this.onModifyFile(relativePathToRootDir.toString(), hash);
         } catch (InputOutputException e) {
             // file does not exist yet, so we create it
             logger.debug("No object stored for file " + relativePathToRootDir.toString() + ". Creating...");
-            try {
-
-                String hash = null;
-                if (file.isFile() || file.isDirectory()) {
-                    hash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), file);
-                }
-
-                this.onCreateFile(relativePathToRootDir.toString(), hash);
-            } catch (IOException e1) {
-                logger.error("Could not create path object for file " + relativePathToRootDir.toString() + ". Message: " + e1.getMessage());
-            }
+            this.onCreateFile(relativePathToRootDir.toString(), hash);
         }
 
         if (file.isDirectory()) {
@@ -220,8 +230,8 @@ public class ObjectStore implements IObjectStore {
                 object.getAccessType(),
                 object.isShared(),
                 true,
-                null,
-                new HashSet<>(),
+                null, // reset
+                new HashSet<>(), // reset
                 object.getVersions()
         );
 
