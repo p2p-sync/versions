@@ -2,6 +2,7 @@ package org.rmatil.sync.version.core.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
 
 import java.util.ArrayList;
@@ -27,6 +28,12 @@ public class PathObject {
      * The type of the file, e.g directory or file
      */
     protected PathType pathType;
+
+    /**
+     * The access type the client has on this file
+     * if it is shared. May be null otherwise
+     */
+    protected AccessType accessType;
 
     /**
      * Whether this object is shared
@@ -55,19 +62,21 @@ public class PathObject {
     protected List<Version> versions;
 
     /**
-     * @param name      The name of the file or directory (without the path to it)
-     * @param path      The path to the file or directory (without the name of it)
-     * @param pathType  The type of the file
-     * @param isShared  Whether this file is shared
-     * @param isDeleted Whether the path on disk is deleted
-     * @param owner     The owner's username in case the file is shared
-     * @param sharers   A list of sharers
-     * @param versions  A list of versions
+     * @param name       The name of the file or directory (without the path to it)
+     * @param path       The path to the file or directory (without the name of it)
+     * @param pathType   The type of the file
+     * @param accessType The access type the client has on this file if it is shared. May be null otherwise
+     * @param isShared   Whether this file is shared
+     * @param isDeleted  Whether the path on disk is deleted
+     * @param owner      The owner's username in case the file is shared
+     * @param sharers    A list of sharers
+     * @param versions   A list of versions
      */
-    public PathObject(String name, String path, PathType pathType, boolean isShared, boolean isDeleted, String owner, Set<Sharer> sharers, List<Version> versions) {
+    public PathObject(String name, String path, PathType pathType, AccessType accessType, boolean isShared, boolean isDeleted, String owner, Set<Sharer> sharers, List<Version> versions) {
         this.name = name;
         this.path = path;
         this.pathType = pathType;
+        this.accessType = accessType;
         this.isShared = isShared;
         this.isDeleted = isDeleted;
         this.owner = owner;
@@ -120,6 +129,26 @@ public class PathObject {
      */
     public PathType getPathType() {
         return pathType;
+    }
+
+    /**
+     * Returns the access type the client has on this file
+     * if it is shared. May be null otherwise
+     *
+     * @return The access type of this file
+     */
+    public AccessType getAccessType() {
+        return accessType;
+    }
+
+    /**
+     * Sets the access type the client has on this file
+     * if it is shared. May be null otherwise
+     *
+     * @param accessType The access type
+     */
+    public void setAccessType(AccessType accessType) {
+        this.accessType = accessType;
     }
 
     /**

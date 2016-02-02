@@ -75,7 +75,7 @@ public class ObjectManagerTest {
         versions.add(v1);
         versions.add(v2);
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, true, false, owner, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, true, false, owner, sharers, versions);
     }
 
     @AfterClass
@@ -195,7 +195,7 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, null, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, AccessType.WRITE, false, false, null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
         List<PathObject> children = objectManager.getChildren("somePath/to/dir");
@@ -213,10 +213,10 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, false, false, null, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, AccessType.WRITE, false, false, null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
-        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, false, false, null, new HashSet<>(), new ArrayList<>());
+        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, false, false, null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(anotherObject);
 
         Index origIndex = objectManager.getIndex();
@@ -250,6 +250,7 @@ public class ObjectManagerTest {
                 pathObject.getName(),
                 pathObject.getPath(),
                 pathObject.getPathType(),
+                AccessType.WRITE,
                 false,
                 false,
                 null,
