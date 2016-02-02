@@ -139,6 +139,16 @@ public class SharerManagerTest {
         assertEquals("Sharer should be still present", 3, updatePathObject.getSharers().size());
         assertEquals("Sharer's access type should be removed", AccessType.ACCESS_REMOVED, actualSharer3.getAccessType());
 
+        sharerManager.addOwner("owner", pathObject.getAbsolutePath());
+
+        PathObject updatePathObject2 = sharerManager.getObjectManager().getObjectForPath(pathObject.getAbsolutePath());
+        assertEquals("Owner should be equal", "owner", updatePathObject2.getOwner());
+        assertEquals("Owner should be equal2", "owner", sharerManager.getOwner(pathObject.getAbsolutePath()));
+
+        sharerManager.removeOwner(pathObject.getAbsolutePath());
+        assertNull("Owner should be null after removal", sharerManager.getOwner(pathObject.getAbsolutePath()));
+
+
         sharerManager.removeSharer(sharer2.getUsername(), pathObject.getAbsolutePath());
         sharerManager.removeSharer(sharer1.getUsername(), pathObject.getAbsolutePath());
 

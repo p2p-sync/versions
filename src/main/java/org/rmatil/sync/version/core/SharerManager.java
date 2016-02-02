@@ -96,24 +96,25 @@ public class SharerManager implements ISharerManager {
     @Override
     public void addOwner(String username, String pathToFile)
             throws InputOutputException {
-        String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
-
-        PathObject pathObject = this.objectManager.getObject(fileNameHash);
+        PathObject pathObject = this.objectManager.getObjectForPath(pathToFile);
         pathObject.setOwner(username);
         this.objectManager.writeObject(pathObject);
     }
 
     @Override
-    public void removeOwner(String username, String pathToFile)
+    public void removeOwner(String pathToFile)
             throws InputOutputException {
-        String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
+        PathObject pathObject = this.objectManager.getObjectForPath(pathToFile);
 
-        PathObject pathObject = this.objectManager.getObject(fileNameHash);
+        pathObject.setOwner(null);
+        this.objectManager.writeObject(pathObject);
+    }
 
-        if (pathObject.getOwner().equals(username)) {
-            pathObject.setOwner(null);
-            this.objectManager.writeObject(pathObject);
-        }
+    @Override
+    public String getOwner(String pathToFile)
+            throws InputOutputException {
+        PathObject pathObject = this.objectManager.getObjectForPath(pathToFile);
+        return pathObject.getOwner();
     }
 
     @Override

@@ -60,12 +60,23 @@ public interface ISharerManager {
     /**
      * Removes the owner of the file specified
      *
-     * @param username   The owner's username to remove
-     * @param pathToFile The path to the file from which to remove the given owner
+     * @param pathToFile The path to the file from which to remove the owner
      *
      * @throws InputOutputException If removing the owner fails
      */
-    void removeOwner(String username, String pathToFile)
+    void removeOwner(String pathToFile)
+            throws InputOutputException;
+
+    /**
+     * Returns the owner of the file specified
+     *
+     * @param pathToFile The path to the file from which to get the owner
+     *
+     * @return The owner's username or null if no owner is registered
+     *
+     * @throws InputOutputException If accessing the object store fails
+     */
+    String getOwner(String pathToFile)
             throws InputOutputException;
 
     /**
