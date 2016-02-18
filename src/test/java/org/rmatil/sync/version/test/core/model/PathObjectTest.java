@@ -50,5 +50,9 @@ public class PathObjectTest {
         assertEquals("Access type should be equal", ACCESS_TYPE, pathObject.getAccessType());
         pathObject.setAccessType(AccessType.READ);
         assertEquals("Access type should be equal after writing", AccessType.READ, pathObject.getAccessType());
+
+        assertEquals("Path type should be a dir", PathType.DIRECTORY, pathObject.getPathType());
+        pathObject.setPathType(PathType.FILE);
+        assertEquals("Path type should be a file", PathType.FILE, pathObject.getPathType());
     }
 }

@@ -132,6 +132,15 @@ public class PathObject {
     }
 
     /**
+     * Set the path type
+     *
+     * @param pathType Set the path type
+     */
+    public void setPathType(PathType pathType) {
+        this.pathType = pathType;
+    }
+
+    /**
      * Returns the access type the client has on this file
      * if it is shared. May be null otherwise
      *
