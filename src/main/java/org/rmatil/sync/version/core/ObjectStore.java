@@ -320,7 +320,10 @@ public class ObjectStore implements IObjectStore {
                     }
                 } else if (otherPathObject.getVersions().size() > 0) {
                     // there is a conflict on the file
-                    missingOrOutdatedPaths.get(MergedObjectType.CONFLICT).add(entry.getKey());
+                    // -> do only create a conflict for non directory paths
+                    if (PathType.DIRECTORY != otherPathObject.getPathType()) {
+                        missingOrOutdatedPaths.get(MergedObjectType.CONFLICT).add(entry.getKey());
+                    }
                 }
 
                 // merge sharers
@@ -328,7 +331,7 @@ public class ObjectStore implements IObjectStore {
                 Set<Sharer> sharers = ourObject.getSharers();
                 Set<Sharer> otherSharers = otherPathObject.getSharers();
 
-                for (Sharer ownSharer :  sharers) {
+                for (Sharer ownSharer : sharers) {
                     for (Sharer otherSharer : otherSharers) {
                         if (ownSharer.getUsername().equals(otherSharer.getUsername())) {
                             // compare history

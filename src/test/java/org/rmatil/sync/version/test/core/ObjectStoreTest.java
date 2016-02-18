@@ -1,5 +1,6 @@
 package org.rmatil.sync.version.test.core;
 
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -330,6 +331,7 @@ public class ObjectStoreTest {
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/nyOtherInnerFile.txt"));
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/myFutureDeletedFile.txt"));
         Files.createFile(ROOT_TEST_DIR.resolve("someFileForMergingOfSharersAndOwners.txt"));
+        Files.createDirectory(ROOT_TEST_DIR.resolve("myDirNotCausingConflicts"));
 
         objectStore1.onCreateFile("myFile1.txt", "someHashOfFile1");
         objectStore1.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
@@ -337,6 +339,7 @@ public class ObjectStoreTest {
         objectStore1.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash");
         objectStore1.onRemoveFile("myDir2/myFutureDeletedFile.txt");
         objectStore1.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
+        objectStore1.onCreateFile("myDirNotCausingConflicts", "someDirHash");
 
         objectStore2.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
         objectStore2.onRemoveFile("myFile2WhichIsDeletedOnTheOtherClient.txt");
@@ -344,8 +347,9 @@ public class ObjectStoreTest {
         objectStore2.onModifyFile("myDir2", "someOtherHash"); // modify hash
         objectStore2.onCreateFile("myDir2/myInnerFile.txt", "hashOfInnerFile");
         objectStore2.onCreateFile("myDir2/myOtherInnerFile.txt", "hashOfInnerFile2");
-        objectStore1.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash"); // we remove this file if he has it but we don't
+        objectStore2.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash"); // we remove this file if he has it but we don't
         objectStore2.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
+        objectStore2.onCreateFile("myDirNotCausingConflicts", "someDifferentDirHash");
 
         // now write different sharers and an empty owner
         List<String> sharingHistory11 = new ArrayList<>();
@@ -420,6 +424,7 @@ public class ObjectStoreTest {
         assertThat("There should be conflict sharedPaths", conflictPaths, is(not(IsEmptyCollection.empty())));
 
         assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
+        assertThat("There should be no conflict item for conflicting directory", conflictPaths, CoreMatchers.not(hasItem("myDirNotCausingConflicts")));
 
 
         objectStore1.getObjectManager().clear();
