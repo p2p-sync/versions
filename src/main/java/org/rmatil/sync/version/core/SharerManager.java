@@ -10,6 +10,7 @@ import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -60,9 +61,13 @@ public class SharerManager implements ISharerManager {
 
         boolean isLastSharerForPath = true;
         Sharer sharer = null;
-        for (Sharer entry : pathObject.getSharers()) {
+
+        Iterator<Sharer> itr = pathObject.getSharers().iterator();
+        while (itr.hasNext()) {
+            Sharer entry = itr.next();
             if (entry.getUsername().equals(username)) {
                 sharer = entry;
+                itr.remove();
             } else {
                 isLastSharerForPath = false;
             }

@@ -129,6 +129,8 @@ public class SharerManagerTest {
 
         PathObject updatePathObject = sharerManager.getObjectManager().getObjectForPath(pathObject.getAbsolutePath());
 
+        assertEquals("Only one sharer should be present", 3, updatePathObject.getSharers().size());
+
         Iterator<Sharer> itr3 = updatePathObject.getSharers().iterator();
         Sharer actualSharer3 = null;
         while (itr3.hasNext()) {
