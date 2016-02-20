@@ -38,7 +38,17 @@ public class VersionManager implements IVersionManager {
         String fileNameHash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), pathToFile);
 
         PathObject pathObject = this.objectManager.getObject(fileNameHash);
-        pathObject.getVersions().add(version);
+
+        if (! pathObject.getVersions().isEmpty()) {
+            // only add a version if the last is not the same
+            Version lastVersion = pathObject.getVersions().get(Math.max(0, pathObject.getVersions().size() - 1));
+            if (! lastVersion.getHash().equals(version.getHash())) {
+                pathObject.getVersions().add(version);
+            }
+        } else {
+            pathObject.getVersions().add(version);
+        }
+
         this.objectManager.writeObject(pathObject);
     }
 

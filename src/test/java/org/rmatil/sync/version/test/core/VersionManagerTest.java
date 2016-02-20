@@ -94,10 +94,18 @@ public class VersionManagerTest {
         assertEquals("versions do not contain v1", 1, versions1.size());
         assertEquals("v1 is not equal", v1, versions1.get(0));
 
-        versionManager.removeVersion(v1, pathObject.getAbsolutePath());
+        // add a version with the same hash
+        Version v2 = new Version("hashOfVersion1");
+        versionManager.addVersion(v2, pathObject.getAbsolutePath());
 
         List<Version> versions2 = versionManager.getVersions(pathObject.getAbsolutePath());
-        assertTrue("versions are not empty after removing", versions2.isEmpty());
+        assertEquals("versions should still contain only v1", 1, versions1.size());
+        assertEquals("v1 is not equal", v1, versions2.get(0));
+
+        versionManager.removeVersion(v1, pathObject.getAbsolutePath());
+
+        List<Version> versions3 = versionManager.getVersions(pathObject.getAbsolutePath());
+        assertTrue("versions are not empty after removing", versions3.isEmpty());
     }
 
     @Test
