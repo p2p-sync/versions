@@ -47,6 +47,7 @@ public class ObjectStoreTest {
     protected static Path testFile = ROOT_TEST_DIR.resolve("myFile.txt");
 
     protected static Path testDir = ROOT_TEST_DIR.resolve("myDir");
+    protected static Path innerFile = testDir.resolve("innerFile.txt");
 
     @BeforeClass
     public static void setUp()
@@ -108,6 +109,56 @@ public class ObjectStoreTest {
         assertEquals("PathType is not a file ", PathType.FILE, pathObject.getPathType());
 
         assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testFile).toString()));
+    }
+
+    @Test
+    public void testOnCreateFileWithParentShared()
+            throws IOException, InterruptedException, InputOutputException {
+        if (! Files.exists(testDir)) {
+            Files.createDirectory(testDir);
+        }
+
+        if (! Files.exists(innerFile)) {
+            Files.createFile(innerFile);
+        }
+
+        // wait a bit for file creation
+        Thread.sleep(100L);
+
+        objectStore1.onCreateFile(ROOT_TEST_DIR.relativize(testDir).toString(), "someDirHash");
+
+        PathObject pathObject = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), testDir.getFileName().toString()));
+
+        assertEquals("Name is not equal", testDir.getFileName().toString(), pathObject.getName());
+        assertEquals("Versions are not present", 1, pathObject.getVersions().size());
+        assertEquals("Hash is not equal", "someDirHash", pathObject.getVersions().get(0).getHash());
+        assertEquals("PathType is not a directory", PathType.DIRECTORY, pathObject.getPathType());
+
+        assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(testDir).toString()));
+
+        // add some sharers to it
+        Sharer sharer = new Sharer("sharer", AccessType.WRITE, new ArrayList<>());
+        Set<Sharer> sharers = new HashSet<>();
+        sharers.add(sharer);
+
+        pathObject.setIsShared(true);
+        pathObject.setSharers(sharers);
+
+        objectStore1.getObjectManager().writeObject(pathObject);
+
+        // now create child inside testDir
+
+        objectStore1.onCreateFile(ROOT_TEST_DIR.relativize(innerFile).toString(), "myHash");
+
+        pathObject = objectStore1.getObjectManager().getObjectForPath(ROOT_TEST_DIR.relativize(innerFile).toString());
+
+        assertEquals("Name is not equal", innerFile.getFileName().toString(), pathObject.getName());
+        assertEquals("Versions are not present", 1, pathObject.getVersions().size());
+        assertEquals("Hash is not equal", "myHash", pathObject.getVersions().get(0).getHash());
+        assertEquals("PathType is not a file ", PathType.FILE, pathObject.getPathType());
+        assertTrue("PathObject should be shared", pathObject.isShared());
+        assertThat("Sharer should be contained", pathObject.getSharers(), hasItem(sharer));
+        assertTrue("Index does not contain file", objectStore1.getObjectManager().getIndex().getPaths().containsKey(ROOT_TEST_DIR.relativize(innerFile).toString()));
     }
 
     @Test

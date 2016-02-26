@@ -193,15 +193,37 @@ public class ObjectStore implements IObjectStore {
         List<Version> versions = new ArrayList<>();
         versions.add(v1);
 
+        // to ensure, that elements which are located within a shared
+        // directory are also shared, we have to check the sharing
+        // properties of its direct parent
+        boolean isShared = false;
+        Set<Sharer> sharers = new HashSet<>();
+
+        String parent = Naming.getParentPath(relativePath);
+
+        if (null != parent && ! "/".equals(parent)) {
+            try {
+                PathObject parentObject = this.objectManager.getObjectForPath(parent);
+
+                if (parentObject.isShared()) {
+                    isShared = true;
+                    sharers = parentObject.getSharers();
+                }
+
+            } catch (InputOutputException e) {
+                logger.error("Could not fetch parent object for path " + parent + " to check for sharers: " + e.getMessage());
+            }
+        }
+
         PathObject pathObject = new PathObject(
                 relativePathToWatchedDir.getFileName().toString(),
                 pathToFileWithoutFilename,
                 pathType,
                 null,
-                false,
+                isShared,
                 false,
                 null,
-                new HashSet<>(),
+                sharers,
                 versions
         );
 
