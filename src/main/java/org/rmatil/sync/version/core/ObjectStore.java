@@ -6,10 +6,7 @@ import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.*;
 import org.rmatil.sync.version.config.Config;
-import org.rmatil.sync.version.core.model.Index;
-import org.rmatil.sync.version.core.model.PathObject;
-import org.rmatil.sync.version.core.model.Sharer;
-import org.rmatil.sync.version.core.model.Version;
+import org.rmatil.sync.version.core.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,12 +51,15 @@ public class ObjectStore implements IObjectStore {
 
     protected ISharerManager sharerManager;
 
+    protected IDeleteManager deleteManager;
+
     public ObjectStore(Path rootDir, String indexFileName, String objectDirName, IStorageAdapter storageAdapter)
             throws InputOutputException {
         this.rootDir = rootDir;
         this.objectManager = new ObjectManager(indexFileName, objectDirName, storageAdapter);
         this.versionManager = new VersionManager(this.objectManager);
         this.sharerManager = new SharerManager(this.objectManager);
+        this.deleteManager = new DeleteManager(this.objectManager);
         this.storageAdapter = storageAdapter;
     }
 
@@ -215,19 +215,30 @@ public class ObjectStore implements IObjectStore {
             }
         }
 
+        PathObject oldObject;
+        List<String> deleteHistory = new ArrayList<>();
+        try {
+            oldObject = this.objectManager.getObjectForPath(relativePathToWatchedDir.toString());
+            // replace delete history
+            deleteHistory = oldObject.getDeleted().getDeleteHistory();
+        } catch (InputOutputException e) {
+            // no object is stored on this path yet
+        }
+
         PathObject pathObject = new PathObject(
                 relativePathToWatchedDir.getFileName().toString(),
                 pathToFileWithoutFilename,
                 pathType,
                 null,
                 isShared,
-                false,
+                new Delete(DeleteType.EXISTENT, deleteHistory),
                 null,
                 sharers,
                 versions
         );
 
         this.objectManager.writeObject(pathObject);
+        this.deleteManager.setIsExistent(relativePathToWatchedDir.toString());
     }
 
     @Override
@@ -251,13 +262,14 @@ public class ObjectStore implements IObjectStore {
                 object.getPathType(),
                 object.getAccessType(),
                 object.isShared(),
-                true,
+                object.getDeleted(),
                 null, // reset
                 new HashSet<>(), // reset
                 object.getVersions()
         );
 
         this.objectManager.writeObject(deletedObject);
+        this.deleteManager.setIsDeleted(relativePath);
     }
 
     @Override
@@ -272,7 +284,7 @@ public class ObjectStore implements IObjectStore {
                 oldObject.getPathType(),
                 oldObject.getAccessType(),
                 oldObject.isShared(),
-                oldObject.isDeleted(),
+                oldObject.getDeleted(),
                 oldObject.getOwner(),
                 oldObject.getSharers(),
                 oldObject.getVersions()
@@ -294,6 +306,11 @@ public class ObjectStore implements IObjectStore {
     }
 
     @Override
+    public IDeleteManager getDeleteManager() {
+        return this.deleteManager;
+    }
+
+    @Override
     public HashMap<MergedObjectType, Set<String>> mergeObjectStore(IObjectStore otherObjectStore)
             throws InputOutputException {
         HashMap<MergedObjectType, Set<String>> missingOrOutdatedPaths = new HashMap<>();
@@ -301,21 +318,43 @@ public class ObjectStore implements IObjectStore {
         missingOrOutdatedPaths.put(MergedObjectType.DELETED, new HashSet<>());
         missingOrOutdatedPaths.put(MergedObjectType.CONFLICT, new HashSet<>());
 
-        Index index = this.getObjectManager().getIndex();
+        Index ourIndex = this.getObjectManager().getIndex();
         Index otherIndex = otherObjectStore.getObjectManager().getIndex();
 
         // check if we have the file
         for (Map.Entry<String, String> entry : otherIndex.getPaths().entrySet()) {
-            if (null != index.getPaths().get(entry.getKey())) {
+            if (null != ourIndex.getPaths().get(entry.getKey())) {
                 // ok, we got the file too, now check the version and if the file should be deleted
                 String hashToFile = otherIndex.getPaths().get(entry.getKey());
                 PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
+                PathObject ourPathObject = this.getObjectManager().getObject(hashToFile);
 
                 // check if we should have deleted that file
-                if (otherPathObject.isDeleted()) {
-                    this.onRemoveFile(entry.getKey());
-                    missingOrOutdatedPaths.get(MergedObjectType.DELETED).add(entry.getKey());
-                    continue;
+                if (! ourPathObject.getDeleted().getDeleteType().equals(otherPathObject.getDeleted().getDeleteType())) {
+                    // check whether the other delete history is greater
+                    if (ourPathObject.getDeleted().getDeleteHistory().size() < otherPathObject.getDeleted().getDeleteHistory().size()) {
+                        if (DeleteType.DELETED == otherPathObject.getDeleted().getDeleteType()) {
+                            missingOrOutdatedPaths.get(MergedObjectType.DELETED).add(entry.getKey());
+                            // reset owner and sharer
+                            this.onRemoveFile(entry.getKey());
+                        } else {
+                            // if the file exists (again), we have to fetch it
+                            missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
+                        }
+
+                        // it is -> we have to get the state of the other
+                        // but use the history of the other
+                        ourPathObject.setDeleted(otherPathObject.getDeleted());
+
+                        this.objectManager.writeObject(ourPathObject);
+                        continue;
+                    }
+                } else {
+                    // final state is equal, check that we have the same history
+                    if (ourPathObject.getDeleted().getDeleteHistory().size() < otherPathObject.getDeleted().getDeleteHistory().size()) {
+                        ourPathObject.setDeleted(otherPathObject.getDeleted());
+                        this.objectManager.writeObject(ourPathObject);
+                    }
                 }
 
                 List<Version> versions = this.getObjectManager().getObject(hashToFile).getVersions();
@@ -349,8 +388,7 @@ public class ObjectStore implements IObjectStore {
                 }
 
                 // merge sharers
-                PathObject ourObject = this.getObjectManager().getObject(hashToFile);
-                Set<Sharer> sharers = ourObject.getSharers();
+                Set<Sharer> sharers = ourPathObject.getSharers();
                 Set<Sharer> otherSharers = otherPathObject.getSharers();
 
                 for (Sharer ownSharer : sharers) {
@@ -383,16 +421,16 @@ public class ObjectStore implements IObjectStore {
                     }
                 }
 
-                ourObject.setSharers(sharers);
+                ourPathObject.setSharers(sharers);
 
                 // merge owner
-                if (null == ourObject.getOwner() && null != otherPathObject.getOwner()) {
+                if (null == ourPathObject.getOwner() && null != otherPathObject.getOwner()) {
                     // check if the other client has an owner
-                    ourObject.setOwner(otherPathObject.getOwner());
+                    ourPathObject.setOwner(otherPathObject.getOwner());
                 }
 
                 // update changes
-                this.getObjectManager().writeObject(ourObject);
+                this.getObjectManager().writeObject(ourPathObject);
 
             } else {
                 // we do not have the file yet, so check whether it should be deleted (flag)
@@ -401,7 +439,7 @@ public class ObjectStore implements IObjectStore {
                 PathObject otherPathObject = otherObjectStore.getObjectManager().getObject(hashToFile);
 
                 // no need to remove the file from our index since it did not exist anyway
-                if (! otherPathObject.isDeleted()) {
+                if (DeleteType.EXISTENT == otherPathObject.getDeleted().getDeleteType()) {
                     // the file was not deleted, so we have to add it to our object store
                     int versionCtr = 0;
                     for (Version version : otherPathObject.getVersions()) {
@@ -416,6 +454,22 @@ public class ObjectStore implements IObjectStore {
 
                     // add the path to the file to the missing files
                     missingOrOutdatedPaths.get(MergedObjectType.CHANGED).add(entry.getKey());
+                } else {
+                    // the file was deleted
+                    PathObject deletedPathObject = new PathObject(
+                            otherPathObject.getName(),
+                            otherPathObject.getPath(),
+                            otherPathObject.getPathType(),
+                            otherPathObject.getAccessType(),
+                            otherPathObject.isShared(),
+                            otherPathObject.getDeleted(),
+                            otherPathObject.getOwner(),
+                            otherPathObject.getSharers(),
+                            otherPathObject.getVersions()
+                    );
+
+                    // add the state too for the deleted file
+                    this.objectManager.writeObject(deletedPathObject);
                 }
             }
         }

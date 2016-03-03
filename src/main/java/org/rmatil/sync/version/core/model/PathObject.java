@@ -43,7 +43,7 @@ public class PathObject {
     /**
      * Whether the corresponding file on disk is deleted
      */
-    protected boolean isDeleted;
+    protected Delete deleted;
 
     /**
      * The username of the file owner in case the
@@ -67,18 +67,18 @@ public class PathObject {
      * @param pathType   The type of the file
      * @param accessType The access type the client has on this file if it is shared. May be null otherwise
      * @param isShared   Whether this file is shared
-     * @param isDeleted  Whether the path on disk is deleted
+     * @param deleted    Whether the path on disk is deleted
      * @param owner      The owner's username in case the file is shared
      * @param sharers    A list of sharers
      * @param versions   A list of versions
      */
-    public PathObject(String name, String path, PathType pathType, AccessType accessType, boolean isShared, boolean isDeleted, String owner, Set<Sharer> sharers, List<Version> versions) {
+    public PathObject(String name, String path, PathType pathType, AccessType accessType, boolean isShared, Delete deleted, String owner, Set<Sharer> sharers, List<Version> versions) {
         this.name = name;
         this.path = path;
         this.pathType = pathType;
         this.accessType = accessType;
         this.isShared = isShared;
-        this.isDeleted = isDeleted;
+        this.deleted = deleted;
         this.owner = owner;
         this.sharers = sharers;
         if (null == this.sharers) {
@@ -180,12 +180,21 @@ public class PathObject {
     }
 
     /**
-     * Returns true if the path on disk is deleted
+     * Returns information whether the path on disk is deleted
      *
-     * @return True, if deleted on disk, false otherwise
+     * @return The information whether the element is deleted
      */
-    public boolean isDeleted() {
-        return isDeleted;
+    public Delete getDeleted() {
+        return this.deleted;
+    }
+
+    /**
+     * Set the information whether an object is deleted or not
+     *
+     * @param deleted The information bag holder
+     */
+    public void setDeleted(Delete deleted) {
+        this.deleted = deleted;
     }
 
     /**

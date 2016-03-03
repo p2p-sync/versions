@@ -12,6 +12,7 @@ import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectManager;
 import org.rmatil.sync.version.core.VersionManager;
+import org.rmatil.sync.version.core.model.Delete;
 import org.rmatil.sync.version.core.model.PathObject;
 import org.rmatil.sync.version.core.model.Sharer;
 import org.rmatil.sync.version.core.model.Version;
@@ -71,7 +72,7 @@ public class VersionManagerTest {
 
         List<Version> versions = new ArrayList<>();
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, true, true, owner, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, true, new Delete(null, new ArrayList<>()), owner, sharers, versions);
 
         objectManager.writeObject(pathObject);
     }

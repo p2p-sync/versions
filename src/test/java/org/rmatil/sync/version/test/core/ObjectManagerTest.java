@@ -10,13 +10,11 @@ import org.rmatil.sync.persistence.core.local.LocalPathElement;
 import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
+import org.rmatil.sync.version.api.DeleteType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectManager;
 import org.rmatil.sync.version.core.SharerManager;
-import org.rmatil.sync.version.core.model.Index;
-import org.rmatil.sync.version.core.model.PathObject;
-import org.rmatil.sync.version.core.model.Sharer;
-import org.rmatil.sync.version.core.model.Version;
+import org.rmatil.sync.version.core.model.*;
 import org.rmatil.sync.version.test.config.Config;
 import org.rmatil.sync.version.test.util.FileUtil;
 
@@ -75,7 +73,7 @@ public class ObjectManagerTest {
         versions.add(v1);
         versions.add(v2);
 
-        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, true, false, owner, sharers, versions);
+        pathObject = new PathObject("myFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, true, new Delete(null, new ArrayList<>()), owner, sharers, versions);
     }
 
     @AfterClass
@@ -195,7 +193,7 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, AccessType.WRITE, false, false, null, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, AccessType.WRITE, false, new Delete(null, new ArrayList<>()), null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
         List<PathObject> children = objectManager.getChildren("somePath/to/dir");
@@ -213,10 +211,10 @@ public class ObjectManagerTest {
             throws InputOutputException {
         objectManager.writeObject(pathObject);
 
-        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, AccessType.WRITE, false, false, null, new HashSet<>(), new ArrayList<>());
+        PathObject dirObject = new PathObject("dir", "somePath/to", PathType.DIRECTORY, AccessType.WRITE, false, new Delete(null, new ArrayList<>()), null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(dirObject);
 
-        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, false, false, null, new HashSet<>(), new ArrayList<>());
+        PathObject anotherObject = new PathObject("anotherFile.txt", "somePath/to/dir", PathType.FILE, AccessType.WRITE, false, new Delete(null, new ArrayList<>()), null, new HashSet<>(), new ArrayList<>());
         objectManager.writeObject(anotherObject);
 
         Index origIndex = objectManager.getIndex();
@@ -252,7 +250,7 @@ public class ObjectManagerTest {
                 pathObject.getPathType(),
                 AccessType.WRITE,
                 false,
-                false,
+                new Delete(DeleteType.EXISTENT, new ArrayList<>()),
                 null,
                 new HashSet<>(),
                 new ArrayList<>()
@@ -285,5 +283,7 @@ public class ObjectManagerTest {
         assertEquals("SharerName should be equal", "Manuel Internetiquette", objectForFileId.getSharers().iterator().next().getUsername());
         assertEquals("AccessType should be equal", AccessType.WRITE, objectForFileId.getSharers().iterator().next().getAccessType());
         assertEquals("Owner should be equal", "Valentino Morose", objectForFileId.getOwner());
+        assertEquals("Path should be existent", DeleteType.EXISTENT, objectForFileId.getDeleted().getDeleteType());
+        assertEquals("No delete history entry should exist", 0, objectForFileId.getDeleted().getDeleteHistory().size());
     }
 }

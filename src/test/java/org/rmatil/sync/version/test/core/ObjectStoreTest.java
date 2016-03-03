@@ -9,6 +9,7 @@ import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
+import org.rmatil.sync.version.api.DeleteType;
 import org.rmatil.sync.version.api.PathType;
 import org.rmatil.sync.version.core.ObjectStore;
 import org.rmatil.sync.version.core.model.Index;
@@ -25,9 +26,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
@@ -46,7 +45,7 @@ public class ObjectStoreTest {
 
     protected static Path testFile = ROOT_TEST_DIR.resolve("myFile.txt");
 
-    protected static Path testDir = ROOT_TEST_DIR.resolve("myDir");
+    protected static Path testDir   = ROOT_TEST_DIR.resolve("myDir");
     protected static Path innerFile = testDir.resolve("innerFile.txt");
 
     @BeforeClass
@@ -241,13 +240,13 @@ public class ObjectStoreTest {
         assertEquals("Entries in index should not be removed", 3, objectStore1.getObjectManager().getIndex().getPaths().entrySet().size());
 
         PathObject file1 = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testDir.resolve("myOtherFile.txt")).toString()));
-        assertTrue("File1 should be flagged as deleted", file1.isDeleted());
+        assertEquals("File1 should be flagged as deleted", DeleteType.DELETED, file1.getDeleted().getDeleteType());
 
         PathObject file2 = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testDir).toString()));
-        assertTrue("File2 should be flagged as deleted", file2.isDeleted());
+        assertEquals("File2 should be flagged as deleted", DeleteType.DELETED, file2.getDeleted().getDeleteType());
 
         PathObject file3 = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), ROOT_TEST_DIR.relativize(testFile).toString()));
-        assertTrue("File3 should be flagged as deleted", file3.isDeleted());
+        assertEquals("File3 should be flagged as deleted", DeleteType.DELETED, file3.getDeleted().getDeleteType());
     }
 
     @Test
@@ -365,7 +364,7 @@ public class ObjectStoreTest {
 
         // check that delete file is still there
         assertNotNull("Deleted file should still exist in index", objectStore1.getObjectManager().getIndex().getPaths().get(key2));
-        assertTrue("File should be flagged as deleted", objectStore1.getObjectManager().getObjectForPath(key2).isDeleted());
+        assertEquals("File should be flagged as deleted", DeleteType.DELETED, objectStore1.getObjectManager().getObjectForPath(key2).getDeleted().getDeleteType());
 
 
         objectStore1.getObjectManager().clear();
@@ -537,6 +536,135 @@ public class ObjectStoreTest {
         assertThat("There should be conflict sharedPaths", conflictPaths, is(not(IsEmptyCollection.empty())));
 
         assertThat("There is the conflict path", conflictPaths, hasItem("myFile.txt"));
+    }
+
+    @Test
+    public void testDeleteOnMerge()
+            throws IOException, InputOutputException {
+        // create some files and directories, create files really since their path type is used
+        if (! Files.exists(ROOT_TEST_DIR.resolve("myFile.txt"))) {
+            Files.createFile(ROOT_TEST_DIR.resolve("myFile.txt"));
+        }
+
+        objectStore1.onCreateFile("myFile.txt", "initialHash");
+        objectStore2.onCreateFile("myFile.txt", "initialHash");
+
+        PathObject object1 = objectStore1.getObjectManager().getObjectForPath("myFile.txt");
+        PathObject object2 = objectStore2.getObjectManager().getObjectForPath("myFile.txt");
+
+        assertNotNull("PathObject should not be null", object1);
+        assertNotNull("PathObject should not be null", object2);
+        assertEquals("PathObject should be existent", DeleteType.EXISTENT, object1.getDeleted().getDeleteType());
+        assertEquals("PathObject should be existent", DeleteType.EXISTENT, object2.getDeleted().getDeleteType());
+        assertEquals("One delete history should be present", 1, object1.getDeleted().getDeleteHistory().size());
+        assertEquals("One delete history should be present", 1, object2.getDeleted().getDeleteHistory().size());
+
+        // let one object store be different
+        objectStore2.onRemoveFile("myFile.txt");
+
+        Map<ObjectStore.MergedObjectType, Set<String>> merged = objectStore1.mergeObjectStore(objectStore2);
+
+        Set<String> deletedPaths = merged.get(ObjectStore.MergedObjectType.DELETED);
+        Set<String> changedPaths = merged.get(ObjectStore.MergedObjectType.CHANGED);
+        Set<String> conflictPaths = merged.get(ObjectStore.MergedObjectType.CONFLICT);
+        assertEquals("No changed path should be present", 0, changedPaths.size());
+        assertEquals("No conflict path should be present", 0, conflictPaths.size());
+        assertEquals("One deleted path should be present", 1, deletedPaths.size());
+        assertEquals("Path should be equal", "myFile.txt", deletedPaths.iterator().next());
+
+        object1 = objectStore1.getObjectManager().getObjectForPath("myFile.txt");
+
+        assertNotNull("Object1 should not be null", object1);
+        assertEquals("Object1 should be deleted", DeleteType.DELETED, object1.getDeleted().getDeleteType());
+        assertEquals("Delete history should contain 2 elements", 2, object1.getDeleted().getDeleteHistory().size());
+
+        objectStore1.onCreateFile("myFile.txt", "2ndHash");
+
+        object1 = objectStore1.getObjectManager().getObjectForPath("myFile.txt");
+
+        assertNotNull("Object1 should not be null", object1);
+        assertEquals("Object1 should be existent", DeleteType.EXISTENT, object1.getDeleted().getDeleteType());
+        assertEquals("Delete history should contain 3 elements", 3, object1.getDeleted().getDeleteHistory().size());
+
+        Map<ObjectStore.MergedObjectType, Set<String>> merged2 = objectStore2.mergeObjectStore(objectStore1);
+
+        deletedPaths = merged2.get(ObjectStore.MergedObjectType.DELETED);
+        conflictPaths = merged2.get(ObjectStore.MergedObjectType.CONFLICT);
+        changedPaths = merged2.get(ObjectStore.MergedObjectType.CHANGED);
+
+        assertEquals("No deleted path should be contained", 0, deletedPaths.size());
+        assertEquals("No conflict path should be contained", 0, conflictPaths.size());
+        assertEquals("1 changed path should be contained", 1, changedPaths.size());
+        assertEquals("Changed path should be myFile", "myFile.txt", changedPaths.iterator().next());
+
+        // check for longer histories but equal final state
+        objectStore1.onRemoveFile("myFile.txt");
+        objectStore1.onCreateFile("myFile.txt", "3rdHash");
+
+        object1 = objectStore1.getObjectManager().getObjectForPath("myFile.txt");
+        assertNotNull("Object1 should not be null", object1);
+        assertEquals("Object1 should be existent", DeleteType.EXISTENT, object1.getDeleted().getDeleteType());
+        assertEquals("Delete history should contain 5 elements", 5, object1.getDeleted().getDeleteHistory().size());
+
+        // get same delete history
+        objectStore2.mergeObjectStore(objectStore1);
+        object2 = objectStore2.getObjectManager().getObjectForPath("myFile.txt");
+        assertEquals("Delete History should now be equal", object1.getDeleted().getDeleteHistory(), object2.getDeleted().getDeleteHistory());
+
+        // update objectStore2 to the same version
+        objectStore2.onRemoveFile("myFile.txt");
+        objectStore2.onCreateFile("myFile.txt", "3rdHash");
+
+        // check that delete history is applied
+        if (! Files.exists(ROOT_TEST_DIR.resolve("myFile2.txt"))) {
+            Files.createFile(ROOT_TEST_DIR.resolve("myFile2.txt"));
+        }
+
+        objectStore1.onCreateFile("myFile2.txt", "initialHash");
+        objectStore1.onRemoveFile("myFile2.txt");
+        objectStore1.onCreateFile("myFile2.txt", "2ndHash");
+
+        object1 = objectStore1.getObjectManager().getObjectForPath("myFile2.txt");
+
+        assertNotNull("Object1 should not be null", object1);
+        assertEquals("myFile2.txt should be existent", DeleteType.EXISTENT, object1.getDeleted().getDeleteType());
+        assertEquals("Delete history should contain 3 entries", 3, object1.getDeleted().getDeleteHistory().size());
+        assertEquals("myFile2.txt should have 1 version history entry", 1, object1.getVersions().size());
+
+        merged2 = objectStore2.mergeObjectStore(objectStore1);
+
+        deletedPaths = merged2.get(ObjectStore.MergedObjectType.DELETED);
+        changedPaths = merged2.get(ObjectStore.MergedObjectType.CHANGED);
+        conflictPaths = merged2.get(ObjectStore.MergedObjectType.CONFLICT);
+        assertEquals("No deleted path should be contained", 0, deletedPaths.size());
+        assertEquals("No conflict path should be contained", 0, conflictPaths.size());
+        assertEquals("1 changed path should be contained", 1, changedPaths.size());
+
+        if (! Files.exists(ROOT_TEST_DIR.resolve("myFile3.txt"))) {
+            Files.createFile(ROOT_TEST_DIR.resolve("myFile3.txt"));
+        }
+
+        objectStore1.onCreateFile("myFile3.txt", "initialHash");
+        objectStore1.onRemoveFile("myFile3.txt");
+        object1 = objectStore1.getObjectManager().getObjectForPath("myFile3.txt");
+
+        assertNotNull("Object1 should not be null", object1);
+        assertEquals("myFile3.txt should be deleted", DeleteType.DELETED, object1.getDeleted().getDeleteType());
+        assertEquals("Delete history should contain 2 entries", 2, object1.getDeleted().getDeleteHistory().size());
+
+        merged2 = objectStore2.mergeObjectStore(objectStore1);
+
+        deletedPaths = merged2.get(ObjectStore.MergedObjectType.DELETED);
+        changedPaths = merged2.get(ObjectStore.MergedObjectType.CHANGED);
+        conflictPaths = merged2.get(ObjectStore.MergedObjectType.CONFLICT);
+        assertEquals("No deleted path should be contained", 0, deletedPaths.size());
+        assertEquals("No conflict path should be contained", 0, conflictPaths.size());
+        assertEquals("No changed path should be contained", 0, changedPaths.size());
+
+        object2 = objectStore2.getObjectManager().getObjectForPath("myFile3.txt");
+        assertNotNull("Object2 should not be null", object2);
+        assertEquals("myFile3.txt should be deleted", DeleteType.DELETED, object2.getDeleted().getDeleteType());
+        assertEquals("Delete history should contain 2 entries", 2, object2.getDeleted().getDeleteHistory().size());
     }
 
     @Test

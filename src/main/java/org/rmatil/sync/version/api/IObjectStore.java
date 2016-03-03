@@ -118,4 +118,11 @@ public interface IObjectStore {
      * @return The sharer manager
      */
     ISharerManager getSharerManager();
+
+    /**
+     * Returns the delete manager to manage deletions of files
+     *
+     * @return The delete manager
+     */
+    IDeleteManager getDeleteManager();
 }
