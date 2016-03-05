@@ -4,9 +4,10 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.rmatil.sync.version.api.AccessType;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Sharer {
+public class Sharer implements Serializable {
 
     protected String username;
 

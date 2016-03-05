@@ -1,5 +1,7 @@
 package org.rmatil.sync.version.api;
 
+import java.io.Serializable;
+
 /**
  * The access types for a sharer.
  * <p>
@@ -11,7 +13,7 @@ package org.rmatil.sync.version.api;
  * <code>Enum.values()</code> can be used to get the values
  * in declared order
  */
-public enum AccessType {
+public enum AccessType implements Serializable {
 
     /**
      * If a sharer lost his read/write access
