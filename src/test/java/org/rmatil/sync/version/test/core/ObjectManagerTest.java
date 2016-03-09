@@ -3,11 +3,10 @@ package org.rmatil.sync.version.test.core;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
-import org.rmatil.sync.persistence.api.IPathElement;
-import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.api.StorageType;
-import org.rmatil.sync.persistence.core.local.LocalPathElement;
-import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.TreePathElement;
+import org.rmatil.sync.persistence.core.tree.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.DeleteType;
@@ -36,7 +35,7 @@ public class ObjectManagerTest {
 
     public static final Path ROOT_TEST_DIR = Config.DEFAULT.getRootTestDir();
 
-    protected static IStorageAdapter storageAdapter;
+    protected static ITreeStorageAdapter storageAdapter;
 
     protected static ObjectManager objectManager;
 
@@ -135,7 +134,7 @@ public class ObjectManagerTest {
         String prefix = fileNameHash.substring(0, 2);
         String postifx = fileNameHash.substring(2);
 
-        IPathElement pathToObject = new LocalPathElement("objects/" + prefix + "/" + postifx + "/" + fileNameHash + ".json");
+        TreePathElement pathToObject = new TreePathElement("objects/" + prefix + "/" + postifx + "/" + fileNameHash + ".json");
 
         assertTrue("Object was not created", storageAdapter.exists(StorageType.FILE, pathToObject));
 

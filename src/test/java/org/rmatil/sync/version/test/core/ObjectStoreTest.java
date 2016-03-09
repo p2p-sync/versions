@@ -5,8 +5,8 @@ import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
-import org.rmatil.sync.persistence.api.IStorageAdapter;
-import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.DeleteType;
@@ -38,8 +38,8 @@ public class ObjectStoreTest {
     protected static ObjectStore objectStore1;
     protected static ObjectStore objectStore2;
 
-    protected static IStorageAdapter storageAdapter1;
-    protected static IStorageAdapter storageAdapter2;
+    protected static ITreeStorageAdapter storageAdapter1;
+    protected static ITreeStorageAdapter storageAdapter2;
 
     protected static final Path ROOT_TEST_DIR = Config.DEFAULT.getRootTestDir();
 
@@ -665,6 +665,37 @@ public class ObjectStoreTest {
         assertNotNull("Object2 should not be null", object2);
         assertEquals("myFile3.txt should be deleted", DeleteType.DELETED, object2.getDeleted().getDeleteType());
         assertEquals("Delete history should contain 2 entries", 2, object2.getDeleted().getDeleteHistory().size());
+    }
+
+    @Test
+    public void testDelete()
+            throws IOException, InputOutputException {
+
+        // TODO: synced object store does not contain file
+        // TODO: already existing OS does
+        // TODO: make sure, that already existing OS gets a delete event
+
+        if (! Files.exists(ROOT_TEST_DIR.resolve("myFile.txt"))) {
+            Files.createFile(ROOT_TEST_DIR.resolve("myFile.txt"));
+        }
+
+        objectStore1.onCreateFile("myFile1.txt", "someHashOfFile1");
+        objectStore1.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
+        objectStore1.onCreateFile("myDir2", "someDirHash");
+        objectStore1.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash");
+        objectStore1.onRemoveFile("myDir2/myFutureDeletedFile.txt");
+        objectStore1.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
+        objectStore1.onCreateFile("myDirNotCausingConflicts", "someDirHash");
+
+        objectStore2.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
+        objectStore2.onRemoveFile("myFile2WhichIsDeletedOnTheOtherClient.txt");
+        objectStore2.onCreateFile("myDir2", "someDirHash");
+        objectStore2.onModifyFile("myDir2", "someOtherHash"); // modify hash
+        objectStore2.onCreateFile("myDir2/myInnerFile.txt", "hashOfInnerFile");
+        objectStore2.onCreateFile("myDir2/myOtherInnerFile.txt", "hashOfInnerFile2");
+        objectStore2.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash"); // we remove this file if he has it but we don't
+        objectStore2.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
+        objectStore2.onCreateFile("myDirNotCausingConflicts", "someDifferentDirHash");
     }
 
     @Test

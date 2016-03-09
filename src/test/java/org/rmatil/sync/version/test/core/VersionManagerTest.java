@@ -5,8 +5,8 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.rmatil.sync.persistence.api.IStorageAdapter;
-import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
 import org.rmatil.sync.version.api.PathType;
@@ -37,7 +37,7 @@ public class VersionManagerTest {
 
     public static final Path ROOT_TEST_DIR = Config.DEFAULT.getRootTestDir();
 
-    protected static IStorageAdapter storageAdapter;
+    protected static ITreeStorageAdapter storageAdapter;
 
     protected static ObjectManager objectManager;
 

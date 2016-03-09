@@ -2,7 +2,7 @@ package org.rmatil.sync.version.core;
 
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.commons.path.Naming;
-import org.rmatil.sync.persistence.api.IStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.*;
 import org.rmatil.sync.version.config.Config;
@@ -43,7 +43,7 @@ public class ObjectStore implements IObjectStore {
 
     protected Path rootDir;
 
-    protected IStorageAdapter storageAdapter;
+    protected ITreeStorageAdapter storageAdapter;
 
     protected IObjectManager objectManager;
 
@@ -53,7 +53,7 @@ public class ObjectStore implements IObjectStore {
 
     protected IDeleteManager deleteManager;
 
-    public ObjectStore(Path rootDir, String indexFileName, String objectDirName, IStorageAdapter storageAdapter)
+    public ObjectStore(Path rootDir, String indexFileName, String objectDirName, ITreeStorageAdapter storageAdapter)
             throws InputOutputException {
         this.rootDir = rootDir;
         this.objectManager = new ObjectManager(indexFileName, objectDirName, storageAdapter);
@@ -93,7 +93,9 @@ public class ObjectStore implements IObjectStore {
 
         // recreate objects
         for (File file : files) {
-            Path relativeSyncFolder = this.rootDir.relativize(this.storageAdapter.getRootDir());
+            Path relativeSyncFolder = this.rootDir.relativize(
+                    Paths.get(this.storageAdapter.getRootDir().getPath())
+            );
             if (file.getAbsolutePath().equals(this.rootDir.resolve(relativeSyncFolder).toFile().getAbsolutePath()) ||
                     ignoredFiles.contains(this.rootDir.relativize(file.toPath()).toString())) {
                 // ignore sync folder

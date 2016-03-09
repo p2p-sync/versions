@@ -1,10 +1,10 @@
 package org.rmatil.sync.version.core;
 
 import org.rmatil.sync.commons.hashing.Hash;
-import org.rmatil.sync.persistence.api.IPathElement;
 import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.api.StorageType;
-import org.rmatil.sync.persistence.core.local.LocalPathElement;
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.TreePathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.IObjectManager;
 import org.rmatil.sync.version.config.Config;
@@ -23,7 +23,7 @@ public class ObjectManager implements IObjectManager {
 
     private static final Logger logger = LoggerFactory.getLogger(ObjectManager.class);
 
-    protected IStorageAdapter storageAdapter;
+    protected ITreeStorageAdapter storageAdapter;
 
     protected String indexFileName;
 
@@ -31,13 +31,13 @@ public class ObjectManager implements IObjectManager {
 
     protected Index index;
 
-    public ObjectManager(String indexFileName, String objectDirName, IStorageAdapter storageAdapter)
+    public ObjectManager(String indexFileName, String objectDirName, ITreeStorageAdapter storageAdapter)
             throws InputOutputException {
         this.storageAdapter = storageAdapter;
         this.indexFileName = indexFileName;
         this.objectDirName = objectDirName;
 
-        IPathElement indexPath = new LocalPathElement(this.indexFileName);
+        TreePathElement indexPath = new TreePathElement(this.indexFileName);
 
         try {
             // create the index from the stored file
@@ -59,8 +59,8 @@ public class ObjectManager implements IObjectManager {
     @Override
     public synchronized void clear()
             throws InputOutputException {
-        LocalPathElement objectPath = new LocalPathElement(this.objectDirName);
-        LocalPathElement indexPath = new LocalPathElement(this.indexFileName);
+        TreePathElement objectPath = new TreePathElement(this.objectDirName);
+        TreePathElement indexPath = new TreePathElement(this.indexFileName);
 
         // delete all objects
         if (this.storageAdapter.exists(StorageType.DIRECTORY, objectPath)) {
@@ -86,8 +86,8 @@ public class ObjectManager implements IObjectManager {
 
         String pathToObject = this.createObjectDirIfNotExists(fileNameHash);
 
-        IPathElement indexPath = new LocalPathElement(this.indexFileName);
-        IPathElement objectPath = new LocalPathElement(pathToObject + "/" + fileNameHash + ".json");
+        TreePathElement indexPath = new TreePathElement(this.indexFileName);
+        TreePathElement objectPath = new TreePathElement(pathToObject + "/" + fileNameHash + ".json");
 
         logger.trace("Writing path object to " + objectPath.getPath());
         logger.trace("Writing index to " + indexPath.getPath());
@@ -101,7 +101,7 @@ public class ObjectManager implements IObjectManager {
             throws InputOutputException {
         String pathToHash = this.getAbsolutePathToHash(fileNameHash);
 
-        IPathElement objectPath = new LocalPathElement(pathToHash);
+        TreePathElement objectPath = new TreePathElement(pathToHash);
 
         byte[] content = this.storageAdapter.read(objectPath);
         String json = new String(content, StandardCharsets.UTF_8);
@@ -129,8 +129,8 @@ public class ObjectManager implements IObjectManager {
 
         PathObject pathObjectToDelete = this.getObject(fileNameHash);
         logger.trace("Removing path object for file " + pathObjectToDelete.getAbsolutePath());
-        IPathElement objectPath = new LocalPathElement(pathToHash);
-        IPathElement indexPath = new LocalPathElement(this.indexFileName);
+        TreePathElement objectPath = new TreePathElement(pathToHash);
+        TreePathElement indexPath = new TreePathElement(this.indexFileName);
 
         // remove object file, i.e. the file containing versions, ...
         if (this.storageAdapter.exists(StorageType.FILE, objectPath)) {
@@ -172,8 +172,8 @@ public class ObjectManager implements IObjectManager {
     }
 
     @Override
-    public IPathElement getObjectDir() {
-        return new LocalPathElement(this.objectDirName);
+    public TreePathElement getObjectDir() {
+        return new TreePathElement(this.objectDirName);
     }
 
     @Override
@@ -186,13 +186,13 @@ public class ObjectManager implements IObjectManager {
         String prefix = hash.substring(0, 2);
         String postfix = hash.substring(2);
 
-        IPathElement objectDir = new LocalPathElement(this.objectDirName);
+        TreePathElement objectDir = new TreePathElement(this.objectDirName);
         if (! this.storageAdapter.exists(StorageType.DIRECTORY, objectDir)) {
             this.storageAdapter.persist(StorageType.DIRECTORY, objectDir, null);
         }
 
-        IPathElement prefixDir = new LocalPathElement(this.objectDirName + "/" + prefix);
-        IPathElement postfixDir = new LocalPathElement(this.objectDirName + "/" + prefix + "/" + postfix);
+        TreePathElement prefixDir = new TreePathElement(this.objectDirName + "/" + prefix);
+        TreePathElement postfixDir = new TreePathElement(this.objectDirName + "/" + prefix + "/" + postfix);
 
         if (! this.storageAdapter.exists(StorageType.DIRECTORY, prefixDir)) {
             this.storageAdapter.persist(StorageType.DIRECTORY, prefixDir, null);
