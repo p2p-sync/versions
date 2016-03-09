@@ -1,7 +1,6 @@
 package org.rmatil.sync.version.core;
 
 import org.rmatil.sync.commons.hashing.Hash;
-import org.rmatil.sync.persistence.api.IStorageAdapter;
 import org.rmatil.sync.persistence.api.StorageType;
 import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
 import org.rmatil.sync.persistence.core.tree.TreePathElement;
@@ -177,7 +176,7 @@ public class ObjectManager implements IObjectManager {
     }
 
     @Override
-    public IStorageAdapter getStorageAdapater() {
+    public ITreeStorageAdapter getStorageAdapater() {
         return this.storageAdapter;
     }
 

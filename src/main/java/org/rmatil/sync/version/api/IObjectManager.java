@@ -1,7 +1,7 @@
 package org.rmatil.sync.version.api;
 
 import org.rmatil.sync.persistence.api.IPathElement;
-import org.rmatil.sync.persistence.api.IStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.core.model.Index;
 import org.rmatil.sync.version.core.model.PathObject;
@@ -18,7 +18,7 @@ public interface IObjectManager {
     void clear()
             throws InputOutputException;
 
-    /**
+    /**s
      * Writes the given PathObject to the object store
      *
      * @param path The path object to write
@@ -110,5 +110,5 @@ public interface IObjectManager {
      *
      * @return The storage adapter for the object store
      */
-    IStorageAdapter getStorageAdapater();
+    ITreeStorageAdapter getStorageAdapater();
 }
