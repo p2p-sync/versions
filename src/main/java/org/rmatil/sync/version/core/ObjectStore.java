@@ -89,9 +89,10 @@ public class ObjectStore implements IObjectStore {
 
         // recreate objects but ignore the sync folder
         TreePathElement syncFolder = this.objectStoreStorageAdapter.getRootDir();
+        TreePathElement relSyncFolder = new TreePathElement(Paths.get(this.folderStorageAdapter.getRootDir().getPath()).relativize(Paths.get(syncFolder.getPath())).toString());
         for (TreePathElement entry : files) {
-            if (entry.getPath().equals(syncFolder.getPath()) ||
-                    entry.getPath().startsWith(syncFolder.getPath()) ||
+            if (entry.getPath().equals(relSyncFolder.getPath()) ||
+                    entry.getPath().startsWith(relSyncFolder.getPath()) ||
                     ignoredFiles.contains(entry.getPath())) {
                 // ignore sync folder and all its contents
                 logger.trace("Ignoring sync folder from being created in the index");
