@@ -93,7 +93,9 @@ public class ObjectStore implements IObjectStore {
         for (TreePathElement entry : files) {
             if (entry.getPath().equals(relSyncFolder.getPath()) ||
                     entry.getPath().startsWith(relSyncFolder.getPath()) ||
-                    ignoredFiles.contains(entry.getPath())) {
+                    ignoredFiles.contains(entry.getPath()) ||
+                    ignoredFiles.stream().anyMatch(s -> entry.getPath().startsWith(s))) {
+
                 // ignore sync folder and all its contents
                 logger.trace("Ignoring sync folder from being created in the index");
                 continue;
