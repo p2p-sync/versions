@@ -2,7 +2,9 @@ package org.rmatil.sync.version.core;
 
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.commons.path.Naming;
+import org.rmatil.sync.persistence.api.StorageType;
 import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.TreePathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.*;
 import org.rmatil.sync.version.config.Config;
@@ -10,9 +12,7 @@ import org.rmatil.sync.version.core.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -41,9 +41,9 @@ public class ObjectStore implements IObjectStore {
         CONFLICT
     }
 
-    protected Path rootDir;
+    protected ITreeStorageAdapter folderStorageAdapter;
 
-    protected ITreeStorageAdapter storageAdapter;
+    protected ITreeStorageAdapter objectStoreStorageAdapter;
 
     protected IObjectManager objectManager;
 
@@ -53,110 +53,96 @@ public class ObjectStore implements IObjectStore {
 
     protected IDeleteManager deleteManager;
 
-    public ObjectStore(Path rootDir, String indexFileName, String objectDirName, ITreeStorageAdapter storageAdapter)
+    public ObjectStore(ITreeStorageAdapter folderStorageAdapter, String indexFileName, String objectDirName, ITreeStorageAdapter objectStoreStorageAdapter)
             throws InputOutputException {
-        this.rootDir = rootDir;
-        this.objectManager = new ObjectManager(indexFileName, objectDirName, storageAdapter);
+        this.folderStorageAdapter = folderStorageAdapter;
+        this.objectStoreStorageAdapter = objectStoreStorageAdapter;
+        this.objectManager = new ObjectManager(indexFileName, objectDirName, objectStoreStorageAdapter);
         this.versionManager = new VersionManager(this.objectManager);
         this.sharerManager = new SharerManager(this.objectManager);
         this.deleteManager = new DeleteManager(this.objectManager);
-        this.storageAdapter = storageAdapter;
     }
 
     @Override
-    public void sync(File rootSyncDir)
+    public void sync()
             throws InputOutputException {
-        this.sync(rootSyncDir, new ArrayList<>());
+        this.sync(new ArrayList<>());
     }
 
     @Override
-    public void sync(File rootSyncDir, List<String> ignoredFiles)
+    public void sync(List<String> ignoredFiles)
             throws InputOutputException {
-        if (null == rootSyncDir || ! rootSyncDir.exists()) {
-            throw new InputOutputException("Can not sync index. Root of synchronized folder does not exist.");
-        }
-
         // first remove all object which are not present anymore on the storage
         for (Map.Entry<String, String> entry : this.objectManager.getIndex().getPaths().entrySet()) {
             // flag the file as deleted
-            if (! Files.exists(this.rootDir.resolve(entry.getKey()))) {
+            TreePathElement treePathElement = new TreePathElement(entry.getKey());
+            if (! this.folderStorageAdapter.exists(StorageType.FILE, treePathElement) &&
+                    ! this.folderStorageAdapter.exists(StorageType.DIRECTORY, treePathElement)) {
                 this.onRemoveFile(entry.getKey());
             }
         }
 
         // now insert or update the files on storage
-        File[] files = rootSyncDir.listFiles();
-        if (null == files) {
-            logger.info("Abort sync of object store, no files in given directory");
-            return;
-        }
+        List<TreePathElement> files = this.folderStorageAdapter.getDirectoryContents(
+                new TreePathElement("/")
+        );
 
-        // recreate objects
-        for (File file : files) {
-            Path relativeSyncFolder = this.rootDir.relativize(
-                    Paths.get(this.storageAdapter.getRootDir().getPath())
-            );
-            if (file.getAbsolutePath().equals(this.rootDir.resolve(relativeSyncFolder).toFile().getAbsolutePath()) ||
-                    ignoredFiles.contains(this.rootDir.relativize(file.toPath()).toString())) {
-                // ignore sync folder
+        // recreate objects but ignore the sync folder
+        TreePathElement syncFolder = this.objectStoreStorageAdapter.getRootDir();
+        for (TreePathElement entry : files) {
+            if (entry.getPath().equals(syncFolder.getPath()) ||
+                    entry.getPath().startsWith(syncFolder.getPath()) ||
+                    ignoredFiles.contains(entry.getPath())) {
+                // ignore sync folder and all its contents
                 logger.trace("Ignoring sync folder from being created in the index");
                 continue;
             }
 
-            this.syncChild(file);
+            this.syncChild(entry);
         }
     }
 
     @Override
-    public void syncFile(File file)
+    public void syncFile(TreePathElement file)
             throws InputOutputException {
-        if (! file.exists()) {
-            throw new InputOutputException(file.getPath() + " (No such file or directory)");
-        }
-
         // first remove object to force recreation
-        Path relativePathToRootDir = this.rootDir.relativize(file.toPath());
-        this.getObjectManager().removeObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePathToRootDir.toString()));
+        this.getObjectManager().removeObject(
+                Hash.hash(
+                        Config.DEFAULT.getHashingAlgorithm(),
+                        file.getPath()
+                )
+        );
 
         this.syncChild(file);
     }
 
-    protected void syncChild(File file)
+    protected void syncChild(TreePathElement file)
             throws InputOutputException {
-        Path relativePathToRootDir = this.rootDir.relativize(file.toPath());
 
         // recalculate the hash of the file
         String hash = null;
         try {
-            if (file.isFile() || file.isDirectory()) {
-                hash = Hash.hash(Config.DEFAULT.getHashingAlgorithm(), file);
+            if (this.folderStorageAdapter.isFile(file) || this.folderStorageAdapter.isDir(file)) {
+                Path absoluteFile = Paths.get(this.folderStorageAdapter.getRootDir().getPath()).resolve(file.getPath());
+                hash = Hash.hash(
+                        Config.DEFAULT.getHashingAlgorithm(),
+                        absoluteFile.toFile()
+                );
             }
         } catch (IOException e1) {
-            logger.error("Could not create path object for file " + relativePathToRootDir.toString() + ". Message: " + e1.getMessage());
+            logger.error("Could not create path object for file " + file.getPath() + ". Message: " + e1.getMessage());
         }
 
         try {
             // throws an exception if path does not exist
-            PathObject oldObject = this.objectManager.getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), relativePathToRootDir.toString()));
+            PathObject oldObject = this.objectManager.getObjectForPath(file.getPath());
 
             // just update the content hash
-            this.onModifyFile(relativePathToRootDir.toString(), hash);
+            this.onModifyFile(file.getPath(), hash);
         } catch (InputOutputException e) {
             // file does not exist yet, so we create it
-            logger.debug("No object stored for file " + relativePathToRootDir.toString() + ". Creating...");
-            this.onCreateFile(relativePathToRootDir.toString(), hash);
-        }
-
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-            if (null == children) {
-                logger.trace("Children does not contain any children. Stopping to sync deeper");
-                return;
-            }
-
-            for (File child : children) {
-                this.syncChild(child);
-            }
+            logger.debug("No object stored for file " + file.getPath() + ". Creating...");
+            this.onCreateFile(file.getPath(), hash);
         }
     }
 
@@ -165,12 +151,12 @@ public class ObjectStore implements IObjectStore {
             throws InputOutputException {
         logger.debug("Creating object for " + relativePath);
 
-        Path absolutePathOnFs = this.rootDir.resolve(relativePath);
+        TreePathElement element = new TreePathElement(relativePath);
 
         PathType pathType = null;
-        if (absolutePathOnFs.toFile().isDirectory()) {
+        if (this.folderStorageAdapter.isDir(element)) {
             pathType = PathType.DIRECTORY;
-        } else if (absolutePathOnFs.toFile().isFile()) {
+        } else if (this.folderStorageAdapter.isFile(element)) {
             pathType = PathType.FILE;
         }
 

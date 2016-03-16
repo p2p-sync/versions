@@ -1,9 +1,9 @@
 package org.rmatil.sync.version.api;
 
+import org.rmatil.sync.persistence.core.tree.TreePathElement;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.core.ObjectStore;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -11,25 +11,21 @@ import java.util.Set;
 public interface IObjectStore {
 
     /**
-     * Syncs the index content with the
-     * index in the object store
-     *
-     * @param rootSyncDir The absolute path to the synchronized directory root
+     * Syncs the index content with the index in the object store
      *
      * @throws InputOutputException If accessing the filesystem fails somewhere
      */
-    void sync(File rootSyncDir)
+    void sync()
             throws InputOutputException;
 
     /**
      * Syncs the index content with the index in the object store
      *
-     * @param rootSyncDir  The absolute path to the synchronized directory root
      * @param ignoredFiles A list of ignored files (relative to the root directory of the object store)
      *
      * @throws InputOutputException If accessing the filesystem fails somewhere
      */
-    void sync(File rootSyncDir, List<String> ignoredFiles)
+    void sync(List<String> ignoredFiles)
             throws InputOutputException;
 
     /**
@@ -40,7 +36,7 @@ public interface IObjectStore {
      *
      * @throws InputOutputException If the file does not exist
      */
-    void syncFile(File file)
+    void syncFile(TreePathElement file)
             throws InputOutputException;
 
     /**

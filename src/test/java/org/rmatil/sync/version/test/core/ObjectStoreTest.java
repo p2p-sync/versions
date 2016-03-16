@@ -6,6 +6,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.rmatil.sync.commons.hashing.Hash;
 import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.TreePathElement;
 import org.rmatil.sync.persistence.core.tree.local.LocalStorageAdapter;
 import org.rmatil.sync.persistence.exceptions.InputOutputException;
 import org.rmatil.sync.version.api.AccessType;
@@ -38,6 +39,9 @@ public class ObjectStoreTest {
     protected static ObjectStore objectStore1;
     protected static ObjectStore objectStore2;
 
+    protected static ITreeStorageAdapter objectStoreStorageAdapter1;
+    protected static ITreeStorageAdapter objectStoreStorageAdapter2;
+
     protected static ITreeStorageAdapter storageAdapter1;
     protected static ITreeStorageAdapter storageAdapter2;
 
@@ -69,11 +73,14 @@ public class ObjectStoreTest {
             Files.createDirectory(ROOT_TEST_DIR.resolve("sync2/.sync"));
         }
 
-        storageAdapter1 = new LocalStorageAdapter(ROOT_TEST_DIR.resolve("sync1/.sync"));
-        storageAdapter2 = new LocalStorageAdapter(ROOT_TEST_DIR.resolve("sync2/.sync"));
+        objectStoreStorageAdapter1 = new LocalStorageAdapter(ROOT_TEST_DIR.resolve("sync1/.sync"));
+        objectStoreStorageAdapter2 = new LocalStorageAdapter(ROOT_TEST_DIR.resolve("sync2/.sync"));
 
-        objectStore1 = new ObjectStore(ROOT_TEST_DIR, "index.json", "object", storageAdapter1);
-        objectStore2 = new ObjectStore(ROOT_TEST_DIR, "index.json", "object", storageAdapter2);
+        storageAdapter1 = new LocalStorageAdapter(ROOT_TEST_DIR);
+        storageAdapter2 = new LocalStorageAdapter(ROOT_TEST_DIR);
+
+        objectStore1 = new ObjectStore(storageAdapter1, "index.json", "object", objectStoreStorageAdapter1);
+        objectStore2 = new ObjectStore(storageAdapter2, "index.json", "object", objectStoreStorageAdapter2);
     }
 
     @AfterClass
@@ -311,7 +318,7 @@ public class ObjectStoreTest {
         // wait for all files to be deleted
         Thread.sleep(200L);
 
-        objectStore1.sync(ROOT_TEST_DIR.toFile());
+        objectStore1.sync();
 
         Index index = objectStore1.getObjectManager().getIndex();
 
@@ -328,8 +335,8 @@ public class ObjectStoreTest {
         PathObject fileObject = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key2));
         objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key3));
 
-        Path writtenFile = Files.write(testDir.resolve("myOtherFile.txt"), "this is a modified string...".getBytes(), StandardOpenOption.APPEND);
-        objectStore1.syncFile(writtenFile.toFile());
+        Files.write(testDir.resolve("myOtherFile.txt"), "this is a modified string...".getBytes(), StandardOpenOption.APPEND);
+        objectStore1.syncFile(new TreePathElement(key2));
         PathObject fileObjectAfterSync = objectStore1.getObjectManager().getObject(Hash.hash(Config.DEFAULT.getHashingAlgorithm(), key2));
 
         assertEquals("Version size should be one", 1, fileObjectAfterSync.getVersions().size());
@@ -353,7 +360,7 @@ public class ObjectStoreTest {
         // now delete one file and resync
         Files.delete(testDir.resolve("myOtherFile.txt"));
 
-        objectStore1.sync(ROOT_TEST_DIR.toFile());
+        objectStore1.sync();
 
         // check that owner, sharer, access type and isShared is still present
         PathObject pathObject1 = objectStore1.getObjectManager().getObjectForPath(key1);
@@ -376,9 +383,11 @@ public class ObjectStoreTest {
 
         // create some files and directories, create files really since their path type is used
         Files.createFile(ROOT_TEST_DIR.resolve("myFile.txt"));
+        Files.createFile(ROOT_TEST_DIR.resolve("myFile1.txt"));
+        Files.createFile(ROOT_TEST_DIR.resolve("myFile2WhichIsDeletedOnTheOtherClient.txt"));
         Files.createDirectory(ROOT_TEST_DIR.resolve("myDir2"));
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/myInnerFile.txt"));
-        Files.createFile(ROOT_TEST_DIR.resolve("myDir2/nyOtherInnerFile.txt"));
+        Files.createFile(ROOT_TEST_DIR.resolve("myDir2/myOtherInnerFile.txt"));
         Files.createFile(ROOT_TEST_DIR.resolve("myDir2/myFutureDeletedFile.txt"));
         Files.createFile(ROOT_TEST_DIR.resolve("someFileForMergingOfSharersAndOwners.txt"));
         Files.createDirectory(ROOT_TEST_DIR.resolve("myDirNotCausingConflicts"));
