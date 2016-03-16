@@ -28,10 +28,14 @@ Use Maven to add this component as your dependency:
 
 ```
 
-# Architectural Overview
+# Overview
 [![Architectural Overview](https://cdn.rawgit.com/p2p-sync/versions/2d2192873c84878e28be3785f4433421452d6216/src/main/resources/img/architectural-overview.svg)](https://cdn.rawgit.com/p2p-sync/versions/2d2192873c84878e28be3785f4433421452d6216/src/main/resources/img/architectural-overview.svg)
 
-This component is able to save hashes computed over the content of a file in a simple object store. Tracked content is stored in a configurable json index file (e.g. `index.json`). For each stored object, a further object is stored (the `PathObject`). To avoid building the same directory structure again for storing these `PathObjects`, a hash is computed for the path to the file resp. directory. This hash is then stored in the index file accordingly to the file name. 
+This component provides functionality to maintain versions of files resp. directories in a data structure called
+`Object Store`. Additionally, information about their existence on a storage adapter is maintained as well as 
+whether the element is shared and with whom. This data is persisted for each element in a `PathObject`. 
+Tracked elements are listed in an index file (`index.json`). To avoid building the same directory structure again for storing `PathObjects`, a hash is computed for the path to the file resp. directory. This hash is then stored in the index file along with the path to the file.
+
 
 See the following two JSON files as example: 
 
@@ -53,110 +57,54 @@ See the following two JSON files as example:
   "name": "someDir",
   "path": "",
   "pathType": "DIRECTORY",
+  "accessType": null,
   "isShared": false,
-  "sharers": [],
+  "deleted": {
+    "deleteType": "EXISTENT",
+    "deleteHistory": [
+      "b750c33f5b1c5ceb6e1ba7d495e34ab0..."
+    ]
+  },
+  "owner": null,
+  "sharers": [
+    {
+      "username": "Jason Response",
+      "accessType": "ACCESS_REMOVED",
+      "sharingHistory": [
+        "a970ec592dd9e24de01727897d04d15c...",
+        "e80a0e5e10008d56875248d30d5f5328..."
+      ]
+    }
+  ],
   "versions": [
     {
-      "hash": null
+      "hash": "1147f9e50d0d96c179f0ba46b026d77a..."
     }
   ]
 }
 
 ```
 
-The object is stored in a directory named equally to the file hash. The first two characters of the hash build another directory structure to avoid slow operations on certain filesystems due to too many directories:
+`PathObjects` are stored in a directory named equally to the file hash. The first two characters of the hash build another directory structure to avoid slow operations on certain filesystems due to too many directories:
 
 > Some filesystems slow down if you put too many files in the same directory; making the first byte of the SHA1 into a directory is an easy way to create a fixed, 256-way partitioning of the namespace for all possible objects with an even distribution
 >
 > -- <cite>Loeliger, J., & McCullough, M. (2012). Version Control with Git: Powerful Tools and Techniques for Collaborative Software Development.</cite>
 
-# Usage of ObjectStore
-The object store simplifies the usage of the combination of both, the object manager and the version manager, by wrapping
-their functionality. It provides a simple interface which methods can be called for the different events `CreateEvent`, `ModifyEvent`, `DeleteEvent` and `MoveEvent`. The necessary operations to update the state of the index are then executed by the object store. 
+## Object Manager
+An `ObjectManager` simplifies the access to `PathObjects`. It provides methods to create and remove a `PathObject`. 
+Furthermore, utility methods to retrieve the hash for a particular path to a file are specified.
+Its interface can be found in [`IObjectManager`](https://github.com/p2p-sync/versions/blob/master/src/main/java/org/rmatil/sync/version/api/IObjectManager.java)
 
-```java
+## Sharer Manager
+In addition to an `ObjectManager`, the `SharerManager` abstracts the access to sharing-related information. In detail, its
+interface [`ISharerManager`](https://github.com/p2p-sync/versions/blob/master/src/main/java/org/rmatil/sync/version/api/ISharerManager.java) specifies methods to modify the list of sharers resp. to set an owner for a particular element.
 
-// ...
+## Delete Manager
+Finally, a `DeleteManager` provides access to information about the existence of a particular element on the storage adapter
+to which the `ObjectStore` is linked. Its interface specification is defined in [IDeleteManager](https://github.com/p2p-sync/versions/blob/master/src/main/java/org/rmatil/sync/version/api/IDeleteManager.java)
 
-public void onChange(List<IEvent> eventList) {
-  // set up root directory to which paths of events are resolved absolutely (to access file contents for hashing, ...)
-  Path rootDir = Paths.get("myRootDir");
-  // set up storage adapter containing the directory for the object store
-  IStorageAdapter storageAdapter = new LocalStorageAdapter(rootDir.resolve(".sync"));
-  // rootDir: the directory to which paths of incoming events are resolved (to access file contents for hashing, ...)
-  // "index.json": the file in which the index of the object store is kept
-  // "object": the directory name in which information about the objects are hold
-  // storageAdapter: a storage adapter to write the object store to disk, cloud, ...
-  IObjectStore objectStore = new ObjectStore(rootDir, "index.json", "object", storageAdapter);
-  
-  for (IEvent event :  eventList) {
-    switch (event.getEventName()) {
-      case "event.modify":
-        objectStore.onModifyFile(event.getPath().toString(), event.getHash());
-        break;
-      case "event.create":
-        objectStore.onCreateFile(event.getPath().toString(), event.getHash());
-        break;
-      case "event.delete":
-        objectStore.onRemoveFile(event.getPath().toString());
-        break;
-      case "event.move":
-        objectStore.onMoveFile(((MoveEvent) event).getPath().toString(), ((MoveEvent) event).getNewPath().toString());
-        break;
-      default:
-        System.err.println("Event not recognized for processing");
-  }
-}
 
-// ...
-
-```
-
-# Usage of ObjectManager and VersionManager
-
-```java
-
-import org.rmatil.sync.persistence.api.IStorageAdapter;
-import org.rmatil.sync.persistence.core.local.LocalStorageAdapter;
-import org.rmatil.sync.version.api.IObjectManager;
-import org.rmatil.sync.version.core.ObjectManager;
-import org.rmatil.sync.version.api.IVersionManager;
-import org.rmatil.sync.version.core.VersionManager;
-
-import org.rmatil.sync.version.api.PathType;
-import org.rmatil.sync.version.core.model.PathObject;
-import org.rmatil.sync.version.core.model.Version;
-
-import java.nio.file.Paths;
-
-class Main {
-  
-  public static void main(String[] args) {
-    // the root path in which the object store will be created
-    Path rootPath = Paths.get("/tmp");
- 
-    // the folder in which the object store is placed
-    IStorageAdapter objectStorageManager = new LocalStorageAdapter(rootPath.resolve(".sync"));
-    // the first argument is the name of the index file, the second the name of the directory in which the PathObjects are stored
-    IObjectManager objectManager = new ObjectManager("index.json", "object", objectStorageManager);
-    IVersionManager versionManager = new new VersionManager(objectManager);
-    
-    // ...
-    
-    // Create a new path object for the file to add
-    PathObject pathObject = new PathObject("fileName", "path/To/file", PathType.FILE, false, new ArrayList<>(), new ArrayList<>());
-    // write pathObject
-    objectManager.writeObject(pathObject);
-    
-    // create a new version of the file
-    Version v1 = new Version("HashOfVersion1");
-    
-    versionManager
-    versionManager.addVersion(v1, "path/To/file/fileName");
-  }
-}
-
-```
 
 # License
 
