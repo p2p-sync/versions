@@ -104,7 +104,54 @@ interface [`ISharerManager`](https://github.com/p2p-sync/versions/blob/master/sr
 Finally, a `DeleteManager` provides access to information about the existence of a particular element on the storage adapter
 to which the `ObjectStore` is linked. Its interface specification is defined in [IDeleteManager](https://github.com/p2p-sync/versions/blob/master/src/main/java/org/rmatil/sync/version/api/IDeleteManager.java)
 
+# Usage
+The following snippet shows the basic functionality provided by the ObjectStore:
 
+```java
+
+import org.rmatil.sync.persistence.core.tree.ITreeStorageAdapter;
+import org.rmatil.sync.persistence.core.tree.local.LocalStorageAdapter;
+import org.rmatil.sync.persistence.exceptions.InputOutputException;
+import org.rmatil.sync.version.core.ObjectStore;
+
+import java.nio.file.Paths;
+
+// ...
+
+  ITreeStorageAdapter folderStorageAdapter = new LocalStorageAdapter(
+    Paths.get("path/to/my/folder")
+  );
+
+  ITreeStorageAdapter osFolderStorageAdapter = new LocalStorageAdapter(
+    Paths.get("path/to/my/folder/.sync")
+  );
+
+  ObjectStore objectStore = new ObjectStore(
+    folderStorageAdapter,
+    "index.json",
+    "object",
+    osFolderStorageAdapter
+  );
+
+
+  // synchronise the index of the objectStore with the contents on disk,
+  // ObjectStore is placed within path/to/my/folder/.sync
+  objectStore.sync();
+
+
+  // use the following methods to represent changes made on the
+  // disk also in the ObjectStore
+
+  // invoke if file.txt is created within path/to/my/folder
+  objectStore.onCreateFile("file.txt", "initialHash");
+  // invoke if file.txt got changed
+  objectStore.onModifyFile("file.txt", "secondHash");
+  // invoke if file.txt is renamed resp. moved
+  objectStore.onMoveFile("file.txt", "file2.txt");
+  // invoke if file2.txt is removed from the disk
+  objectStore.onRemoveFile("file2.txt");
+
+```
 
 # License
 
