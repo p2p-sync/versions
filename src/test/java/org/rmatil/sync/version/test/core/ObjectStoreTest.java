@@ -677,37 +677,6 @@ public class ObjectStoreTest {
     }
 
     @Test
-    public void testDelete()
-            throws IOException, InputOutputException {
-
-        // TODO: synced object store does not contain file
-        // TODO: already existing OS does
-        // TODO: make sure, that already existing OS gets a delete event
-
-        if (! Files.exists(ROOT_TEST_DIR.resolve("myFile.txt"))) {
-            Files.createFile(ROOT_TEST_DIR.resolve("myFile.txt"));
-        }
-
-        objectStore1.onCreateFile("myFile1.txt", "someHashOfFile1");
-        objectStore1.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
-        objectStore1.onCreateFile("myDir2", "someDirHash");
-        objectStore1.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash");
-        objectStore1.onRemoveFile("myDir2/myFutureDeletedFile.txt");
-        objectStore1.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
-        objectStore1.onCreateFile("myDirNotCausingConflicts", "someDirHash");
-
-        objectStore2.onCreateFile("myFile2WhichIsDeletedOnTheOtherClient.txt", "someHashOfFile1");
-        objectStore2.onRemoveFile("myFile2WhichIsDeletedOnTheOtherClient.txt");
-        objectStore2.onCreateFile("myDir2", "someDirHash");
-        objectStore2.onModifyFile("myDir2", "someOtherHash"); // modify hash
-        objectStore2.onCreateFile("myDir2/myInnerFile.txt", "hashOfInnerFile");
-        objectStore2.onCreateFile("myDir2/myOtherInnerFile.txt", "hashOfInnerFile2");
-        objectStore2.onCreateFile("myDir2/myFutureDeletedFile.txt", "futureDeletedHash"); // we remove this file if he has it but we don't
-        objectStore2.onCreateFile("someFileForMergingOfSharersAndOwners.txt", "someHash");
-        objectStore2.onCreateFile("myDirNotCausingConflicts", "someDifferentDirHash");
-    }
-
-    @Test
     public void accessorTests() {
         assertNotNull("sharer manager should be instantiated", objectStore1.getSharerManager());
         assertNotNull("sharer manager should be instantiated", objectStore2.getSharerManager());
